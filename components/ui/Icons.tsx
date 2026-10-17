@@ -1,7 +1,6 @@
 import React from 'react';
-import { StyleSheet, View, Text, Pressable, ViewStyle } from 'react-native';
 import { Svg, Path } from 'react-native-svg';
-import { colors, spacing, typography, iconSizes } from '@/constants';
+import { colors, iconSizes } from '@/constants';
 
 // Common icons used throughout the app
 
@@ -31,7 +30,6 @@ export const HomeIcon: React.FC<IconProps> = ({
     />
   </Svg>
 );
-
 export const GlobeIcon: React.FC<IconProps> = ({
   size = iconSizes.md,
   color = colors.textSecondary,
@@ -60,29 +58,6 @@ export const GlobeIcon: React.FC<IconProps> = ({
     />
   </Svg>
 );
-
-export const BookIcon: React.FC<IconProps> = ({
-  size = iconSizes.md,
-  color = colors.textSecondary,
-}) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M4 19.5C4 18.837 4.26339 18.2011 4.73223 17.7322C5.20107 17.2634 5.83696 17 6.5 17H20"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M6.5 2H20V22H6.5C5.83696 22 5.20107 21.7366 4.73223 21.2678C4.26339 20.7989 4 20.163 4 19.5V4.5C4 3.83696 4.26339 3.20107 4.73223 2.73223C5.20107 2.26339 5.83696 2 6.5 2Z"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
 export const PieChartIcon: React.FC<IconProps> = ({
   size = iconSizes.md,
   color = colors.textSecondary,
@@ -163,51 +138,6 @@ export const UsersIcon: React.FC<IconProps> = ({
   </Svg>
 );
 
-export const BellIcon: React.FC<IconProps & { hasNotification?: boolean }> = ({
-  size = iconSizes.md,
-  color = colors.textSecondary,
-  hasNotification = false,
-}) => (
-  <View>
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6981 21.5547 10.4458 21.3031 10.27 21"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-    {hasNotification && (
-      <View
-        style={[styles.notificationDot, { top: 0, right: 0 }]}
-      />
-    )}
-  </View>
-);
-
-export const PlusIcon: React.FC<IconProps> = ({
-  size = iconSizes.md,
-  color = colors.white,
-}) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 5V19M5 12H19"
-      stroke={color}
-      strokeWidth={2.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
 export const HeartIcon: React.FC<IconProps & { filled?: boolean }> = ({
   size = iconSizes.md,
   color = colors.textSecondary,
@@ -277,43 +207,6 @@ export const BookmarkIcon: React.FC<IconProps & { filled?: boolean }> = ({
   </Svg>
 );
 
-export const EditIcon: React.FC<IconProps> = ({
-  size = iconSizes.md,
-  color = colors.white,
-}) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M18.5 2.49998C18.8978 2.10216 19.4374 1.87866 20 1.87866C20.5626 1.87866 21.1022 2.10216 21.5 2.49998C21.8978 2.89781 22.1213 3.43737 22.1213 3.99998C22.1213 4.56259 21.8978 5.10216 21.5 5.49998L12 15L8 16L9 12L18.5 2.49998Z"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-export const ChevronRightIcon: React.FC<IconProps> = ({
-  size = iconSizes.md,
-  color = colors.textSecondary,
-}) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M9 18L15 12L9 6"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
 export const ArrowLeftIcon: React.FC<IconProps> = ({
   size = iconSizes.md,
   color = colors.textPrimary,
@@ -350,13 +243,3 @@ export const CheckIcon: React.FC<IconProps> = ({
     />
   </Svg>
 );
-
-const styles = StyleSheet.create({
-  notificationDot: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.teal,
-  },
-});

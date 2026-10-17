@@ -1,14 +1,32 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { StyleSheet, Platform } from 'react-native';
 import { colors, spacing } from '@/constants';
 import {
   HomeIcon,
   GlobeIcon,
+  UsersIcon,
   PieChartIcon,
+  TrendingIcon,
 } from '@/components/ui';
+import { useAuthStore } from '@/stores';
 
 export default function TabsLayout() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const tokens = useAuthStore((state) => state.tokens);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
+  const hasValidSession = Boolean(
+    isAuthenticated && tokens?.accessToken && tokens?.refreshToken
+  );
+
+  if (!hasHydrated) {
+    return null;
+  }
+
+  if (!hasValidSession) {
+    return <Redirect href="/(auth)/welcome" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
@@ -24,7 +42,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color }) => (
             <HomeIcon size={24} color={color} />
           ),
         }}
@@ -33,8 +51,17 @@ export default function TabsLayout() {
         name="markets"
         options={{
           title: 'Markets',
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color }) => (
             <GlobeIcon size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="social"
+        options={{
+          title: 'Social',
+          tabBarIcon: ({ color }) => (
+            <UsersIcon size={24} color={color} />
           ),
         }}
       />
@@ -42,18 +69,24 @@ export default function TabsLayout() {
         name="portfolio"
         options={{
           title: 'Portfolio',
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color }) => (
             <PieChartIcon size={24} color={color} />
           ),
         }}
       />
-      {/* Legacy routes stay addressable during migration, but are intentionally
-          removed from the product navigation. */}
-      <Tabs.Screen name="learn" options={{ href: null }} />
-      <Tabs.Screen name="social" options={{ href: null }} />
-      <Tabs.Screen name="insights" options={{ href: null }} />
-      <Tabs.Screen name="trade" options={{ href: null }} />
-      <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen
+        name="insights"
+        options={{
+          title: 'Insights',
+          tabBarIcon: ({ color }) => (
+            <TrendingIcon size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
@@ -61,14 +94,15 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.white,
-    borderTopWidth: 1,
+    borderTopWidth: 0.5,
     borderTopColor: colors.border,
-    height: Platform.OS === 'ios' ? 82 : 62,
-    paddingTop: spacing.xxs,
+    height: Platform.OS === 'ios' ? 84 : 64,
+    paddingTop: spacing.xs,
     paddingBottom: Platform.OS === 'ios' ? 28 : spacing.xs,
   },
   tabBarLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 2,
   },
 });

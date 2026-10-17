@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { colors, spacing, typography, borderRadius } from '@/constants';
+import { colors, spacing, typography } from '@/constants';
 import { Card, Button, Input } from '@/components/ui';
 import { useAuthStore } from '@/stores';
 import { api } from '@/services/api';

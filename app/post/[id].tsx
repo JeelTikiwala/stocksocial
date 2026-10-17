@@ -10,11 +10,11 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, router } from 'expo-router';
+import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius } from '@/constants';
 import { Avatar, ArrowLeftIcon, HeartIcon, ShareIcon, BookmarkIcon } from '@/components/ui';
 import { formatRelativeTime } from '@/utils';
-import { Post, Comment, User } from '@/types';
+import { Post, Comment } from '@/types';
 
 // Mock data
 const mockPost: Post = {
@@ -85,7 +85,6 @@ const mockComments: Comment[] = [
 ];
 
 export default function PostDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
   const [commentText, setCommentText] = useState('');
   const [isLiked, setIsLiked] = useState(mockPost.isLiked);
   const [isSaved, setIsSaved] = useState(mockPost.isSaved);

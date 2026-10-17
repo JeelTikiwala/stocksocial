@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, Pressable, Image, ViewStyle } from 'react-native';
 import { colors, spacing, typography, borderRadius } from '@/constants';
-import { Card, Avatar, Badge, VerifiedBadge, ProBadge, HeartIcon, MessageIcon, ShareIcon, BookmarkIcon } from '@/components/ui';
+import { Card, Avatar, VerifiedBadge, ProBadge, HeartIcon, MessageIcon, ShareIcon, BookmarkIcon } from '@/components/ui';
 import { formatRelativeTime, truncateText } from '@/utils';
 import { Post } from '@/types';
 

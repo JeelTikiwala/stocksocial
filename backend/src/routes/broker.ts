@@ -1,7 +1,7 @@
 import { Router, Response, NextFunction } from 'express';
 import { prisma } from '../index';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { badRequest, notFound } from '../middleware/errorHandler';
+import { badRequest } from '../middleware/errorHandler';
 import { encrypt, decrypt } from '../utils/encryption';
 
 const router = Router();
@@ -45,7 +45,7 @@ router.get('/status', authenticate, async (req: AuthRequest, res: Response, next
 });
 
 // GET /broker/zerodha/auth-url
-router.get('/zerodha/auth-url', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get('/zerodha/auth-url', authenticate, async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const apiKey = process.env.ZERODHA_API_KEY;
     const redirectUrl = process.env.ZERODHA_REDIRECT_URL;
@@ -123,8 +123,8 @@ router.post('/sync', authenticate, async (req: AuthRequest, res: Response, next:
       throw badRequest('No broker connected');
     }
 
-    // Decrypt access token
-    const accessToken = decrypt(connection.accessToken);
+    // Validate that the stored access token can be decrypted before syncing.
+    decrypt(connection.accessToken);
 
     // TODO: Use kiteconnect SDK to fetch holdings
     // For now, create mock holdings

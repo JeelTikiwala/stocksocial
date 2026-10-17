@@ -44,4 +44,3 @@ yarn-error.*
 
 # local development tooling
 /.claude/
-/claude-hfi

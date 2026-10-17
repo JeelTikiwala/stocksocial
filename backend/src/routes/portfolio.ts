@@ -1,7 +1,6 @@
 import { Router, Response, NextFunction } from 'express';
 import { prisma } from '../index';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { notFound } from '../middleware/errorHandler';
 
 const router = Router();
 

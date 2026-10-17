@@ -21,7 +21,7 @@ const parseCsv = (csv: string): string[][] => {
 };
 
 // GET /markets/events
-router.get('/events', async (req, res, next) => {
+router.get('/events', async (_req, res, next) => {
   try {
     const events = await prisma.marketEvent.findMany({
       where: {
@@ -139,7 +139,7 @@ router.get('/earnings-calendar', async (req, res, next) => {
 });
 
 // GET /markets/featured-lists
-router.get('/featured-lists', async (req, res, next) => {
+router.get('/featured-lists', async (_req, res, next) => {
   try {
     let lists: any[] = [];
 
@@ -234,7 +234,7 @@ router.get('/featured-lists', async (req, res, next) => {
 });
 
 // GET /markets/fear-greed
-router.get('/fear-greed', async (req, res, next) => {
+router.get('/fear-greed', async (_req, res, next) => {
   try {
     // Real free source: Alternative.me Fear & Greed API
     const response = await axios.get('https://api.alternative.me/fng/', {

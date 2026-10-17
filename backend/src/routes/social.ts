@@ -57,7 +57,6 @@ router.get('/activity', authenticate, async (req: AuthRequest, res: Response, ne
 // GET /social/leaderboard - Get top performing portfolios
 router.get('/leaderboard', async (req, res, next) => {
   try {
-    const period = (req.query.period as string) || '1m'; // 1d, 1w, 1m, 3m, 1y, all
     const limit = parseInt(req.query.limit as string) || 20;
 
     // Get users with public portfolios and their holdings

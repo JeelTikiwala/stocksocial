@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, View, Text, Pressable, ViewStyle, Platform } from 'react-native';
-import Svg, { Path, Circle, Line, G } from 'react-native-svg';
+import Svg, { Path, Line, G } from 'react-native-svg';
 import { colors, typography, spacing } from '@/constants';
 import { formatPercentage } from '@/utils';
 import { ChartSegment } from '@/types';
@@ -33,7 +33,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   const outerPadding = 40;
   const containerSize = size + outerPadding * 2;
 
-  const { segments, center, radius, innerRadius } = useMemo(() => {
+  const { segments, center, innerRadius } = useMemo(() => {
     const centerPoint = size / 2;
     const outerRadius = (size - strokeWidth) / 2;
     const inner = outerRadius * innerRadiusRatio;
@@ -65,7 +65,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
 
     // Calculate arc paths
     let startAngle = -90; // Start from top
-    const processedSegments = mainSegments.map((segment, index) => {
+    const processedSegments = mainSegments.map((segment) => {
       const sweepAngle = (segment.allocationPct / 100) * 360;
       const endAngle = startAngle + sweepAngle;
       const midAngle = startAngle + sweepAngle / 2;
@@ -160,7 +160,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
       </Svg>
 
       {/* Outer labels */}
-      {segments.map((segment, index) => {
+      {segments.map((segment) => {
         if (segment.allocationPct < 5) return null;
 
         const isLeft = segment.labelX < center + 40;

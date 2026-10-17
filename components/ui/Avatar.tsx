@@ -7,7 +7,7 @@ import {
   ViewStyle,
   ImageSourcePropType,
 } from 'react-native';
-import { colors, borderRadius, avatarSizes, typography } from '@/constants';
+import { colors, borderRadius, avatarSizes } from '@/constants';
 import { getInitials } from '@/utils';
 
 type AvatarSize = keyof typeof avatarSizes;
@@ -104,76 +104,4 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '600',
   },
-  avatarGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarGroupItem: {},
-  remainingBadge: {
-    backgroundColor: colors.offWhite,
-    borderWidth: 2,
-    borderColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  remainingText: {
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
 });
-
-// Avatar group component for showing multiple avatars
-interface AvatarGroupProps {
-  avatars: Array<{ source?: string; name: string }>;
-  max?: number;
-  size?: AvatarSize;
-}
-
-export const AvatarGroup: React.FC<AvatarGroupProps> = ({
-  avatars,
-  max = 3,
-  size = 'sm',
-}) => {
-  const visibleAvatars = avatars.slice(0, max);
-  const remaining = avatars.length - max;
-  const dimension = avatarSizes[size];
-  const overlap = dimension * 0.3;
-
-  return (
-    <View style={styles.avatarGroup}>
-      {visibleAvatars.map((avatar, index) => (
-        <View
-          key={index}
-          style={[
-            styles.avatarGroupItem,
-            { marginLeft: index > 0 ? -overlap : 0, zIndex: max - index },
-          ]}
-        >
-          <Avatar
-            source={avatar.source}
-            name={avatar.name}
-            size={size}
-            showBorder
-          />
-        </View>
-      ))}
-      {remaining > 0 && (
-        <View
-          style={[
-            styles.remainingBadge,
-            {
-              width: dimension,
-              height: dimension,
-              borderRadius: dimension / 2,
-              marginLeft: -overlap,
-            },
-          ]}
-        >
-          <Text style={[styles.remainingText, { fontSize: dimension * 0.35 }]}>
-            +{remaining}
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-};

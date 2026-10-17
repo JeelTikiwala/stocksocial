@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { useAuthStore } from '@/stores/authStore';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/v1';
@@ -12,6 +11,8 @@ const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+let refreshPromise: Promise<void> | null = null;
 
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
@@ -32,14 +33,24 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+    const authState = useAuthStore.getState();
+    const storedRefreshToken = authState.tokens?.refreshToken;
 
-    // If 401 and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Only refresh an expired session when a refresh token actually exists.
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      storedRefreshToken
+    ) {
       originalRequest._retry = true;
 
       try {
-        const { refreshToken } = useAuthStore.getState();
-        await refreshToken();
+        if (!refreshPromise) {
+          refreshPromise = authState.refreshToken().finally(() => {
+            refreshPromise = null;
+          });
+        }
+        await refreshPromise;
 
         // Retry original request with new token
         const { tokens } = useAuthStore.getState();
@@ -56,34 +67,27 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Recover from stale persisted auth state without replacing the API's 401
+    // with a misleading "No refresh token available" error.
+    if (
+      error.response?.status === 401 &&
+      !storedRefreshToken &&
+      authState.isAuthenticated
+    ) {
+      await authState.logout();
+    }
+
     return Promise.reject(error);
   }
 );
-
-export { apiClient };
 
 // API helper functions
 export const api = {
   // Auth
   auth: {
-    login: (email: string, password: string) =>
-      apiClient.post('/auth/login', { email, password }),
-    register: (email: string, username: string, password: string) =>
-      apiClient.post('/auth/register', { email, username, password }),
-    refresh: (refreshToken: string) =>
-      apiClient.post('/auth/refresh', { refreshToken }),
-    logout: () => apiClient.post('/auth/logout'),
     changePassword: (currentPassword: string, newPassword: string) =>
       apiClient.post('/auth/change-password', { currentPassword, newPassword }),
     deleteAccount: () => apiClient.delete('/auth/account'),
-  },
-
-  // Portfolio
-  portfolio: {
-    getSummary: () => apiClient.get('/portfolio/summary'),
-    getHoldings: () => apiClient.get('/portfolio/holdings'),
-    getChartData: () => apiClient.get('/portfolio/chart-data'),
-    getTrades: () => apiClient.get('/portfolio/trades'),
   },
 
   // Broker
@@ -99,7 +103,6 @@ export const api = {
       apiClient.get('/feed', { params: { cursor } }),
     createPost: (data: { content: string; title?: string; attachedTicker?: string }) =>
       apiClient.post('/posts', data),
-    getPost: (id: string) => apiClient.get(`/posts/${id}`),
     likePost: (id: string) => apiClient.post(`/posts/${id}/like`),
     unlikePost: (id: string) => apiClient.delete(`/posts/${id}/like`),
     savePost: (id: string) => apiClient.post(`/posts/${id}/save`),
@@ -111,16 +114,12 @@ export const api = {
 
   // Users
   users: {
-    getProfile: (username: string) => apiClient.get(`/users/${username}`),
-    getHoldings: (username: string) => apiClient.get(`/users/${username}/holdings`),
-    getPosts: (username: string) => apiClient.get(`/users/${username}/posts`),
     follow: (username: string) => apiClient.post(`/users/${username}/follow`),
     unfollow: (username: string) => apiClient.delete(`/users/${username}/follow`),
   },
 
   // Markets
   markets: {
-    getEvents: () => apiClient.get('/markets/events'),
     getEarningsCalendar: (from: string, to: string) =>
       apiClient.get('/markets/earnings-calendar', { params: { from, to } }),
     getFeaturedLists: () => apiClient.get('/markets/featured-lists'),
@@ -129,12 +128,7 @@ export const api = {
 
   // Stocks - Real Indian market data
   stocks: {
-    search: (query: string) =>
-      apiClient.get('/stocks/search', { params: { q: query } }),
-    getPopular: () => apiClient.get('/stocks/popular'),
     getIndices: () => apiClient.get('/stocks/indices'),
-    getQuote: (ticker: string, exchange: string = 'NSE') =>
-      apiClient.get(`/stocks/${ticker}`, { params: { exchange } }),
     getDetails: (ticker: string, exchange: string = 'NSE') =>
       apiClient.get(`/stocks/${ticker}/details`, { params: { exchange } }),
     getHistory: (
@@ -161,16 +155,6 @@ export const api = {
       apiClient.get('/social/discussions', { params: { ticker, cursor, limit } }),
     discoverUsers: (query?: string, limit: number = 20) =>
       apiClient.get('/social/discover', { params: { q: query, limit } }),
-    getTrendingTickers: (days: number = 7) =>
-      apiClient.get('/social/trending-tickers', { params: { days } }),
-    createActivity: (data: {
-      type: string;
-      ticker?: string;
-      targetUserId?: string;
-      postId?: string;
-      metadata?: Record<string, unknown>;
-      isPublic?: boolean;
-    }) => apiClient.post('/social/activity', data),
   },
 
   // Settings
@@ -197,31 +181,11 @@ export const api = {
       avatarUrl?: string | null;
       isPublic?: boolean;
     }) => apiClient.put('/settings/profile', data),
-    getNotifications: () => apiClient.get('/settings/notifications'),
-    getPrivacy: () => apiClient.get('/settings/privacy'),
     updatePrivacy: (data: {
       profilePublic?: boolean;
       privacyShowHoldings?: boolean;
       privacyShowTrades?: boolean;
       privacyShowActivity?: boolean;
     }) => apiClient.put('/settings/privacy', data),
-  },
-
-  // Watchlist
-  watchlist: {
-    getAll: () => apiClient.get('/watchlist'),
-    create: (name: string, isPublic: boolean = false) =>
-      apiClient.post('/watchlist', { name, isPublic }),
-    get: (id: string) => apiClient.get(`/watchlist/${id}`),
-    update: (id: string, data: { name?: string; isPublic?: boolean }) =>
-      apiClient.put(`/watchlist/${id}`, data),
-    delete: (id: string) => apiClient.delete(`/watchlist/${id}`),
-    addItem: (watchlistId: string, ticker: string, exchange: string = 'NSE') =>
-      apiClient.post(`/watchlist/${watchlistId}/items`, { ticker, exchange }),
-    removeItem: (watchlistId: string, ticker: string) =>
-      apiClient.delete(`/watchlist/${watchlistId}/items/${ticker}`),
-    browsePublic: (limit: number = 20) =>
-      apiClient.get('/watchlist/public/browse', { params: { limit } }),
-    getOrCreateDefault: () => apiClient.post('/watchlist/default'),
   },
 };

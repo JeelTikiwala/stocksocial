@@ -1,9 +1,15 @@
 import React from 'react';
-import { StyleSheet, View, Text, Image } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, spacing, typography } from '@/constants';
-import { Button } from '@/components/ui';
+import {
+  Button,
+  GlobeIcon,
+  PieChartIcon,
+  TrendingIcon,
+  UsersIcon,
+} from '@/components/ui';
 
 export default function WelcomeScreen() {
   return (
@@ -12,7 +18,7 @@ export default function WelcomeScreen() {
         {/* Logo & Branding */}
         <View style={styles.brandingSection}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoEmoji}>🌱</Text>
+            <GlobeIcon size={44} color={colors.teal} />
           </View>
           <Text style={styles.appName}>StockCircle</Text>
           <Text style={styles.tagline}>
@@ -23,17 +29,17 @@ export default function WelcomeScreen() {
         {/* Features */}
         <View style={styles.featuresSection}>
           <FeatureItem
-            emoji="📊"
+            icon={<PieChartIcon size={26} color={colors.purple} />}
             title="Track your portfolio"
             description="Connect your broker and see your investments in one place"
           />
           <FeatureItem
-            emoji="👥"
+            icon={<UsersIcon size={26} color={colors.purple} />}
             title="Learn from others"
             description="Follow investors and see what they're buying"
           />
           <FeatureItem
-            emoji="💡"
+            icon={<TrendingIcon size={26} color={colors.purple} />}
             title="Get insights"
             description="AI-powered analysis of your portfolio"
           />
@@ -62,15 +68,15 @@ export default function WelcomeScreen() {
 }
 
 interface FeatureItemProps {
-  emoji: string;
+  icon: React.ReactNode;
   title: string;
   description: string;
 }
 
-const FeatureItem: React.FC<FeatureItemProps> = ({ emoji, title, description }) => (
+const FeatureItem: React.FC<FeatureItemProps> = ({ icon, title, description }) => (
   <View style={styles.featureItem}>
     <View style={styles.featureIcon}>
-      <Text style={styles.featureEmoji}>{emoji}</Text>
+      {icon}
     </View>
     <View style={styles.featureText}>
       <Text style={styles.featureTitle}>{title}</Text>
@@ -102,9 +108,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  logoEmoji: {
-    fontSize: 40,
-  },
   appName: {
     ...typography.h1,
     color: colors.textPrimary,
@@ -129,9 +132,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
-  },
-  featureEmoji: {
-    fontSize: 24,
   },
   featureText: {
     flex: 1,

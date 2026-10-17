@@ -4,6 +4,7 @@ import {
   Pressable,
   Text,
   ActivityIndicator,
+  StyleProp,
   ViewStyle,
   TextStyle,
   PressableProps,
@@ -52,45 +53,11 @@ export const Button: React.FC<ButtonProps> = ({
     onPress?.(event);
   };
 
-  const variantBase: Record<ButtonVariant, ViewStyle> = {
-    primary: styles.primaryBase,
-    secondary: styles.secondaryBase,
-    outline: styles.outlineBase,
-    ghost: styles.ghostBase,
-    danger: styles.dangerBase,
-  };
-  const sizeBase: Record<ButtonSize, ViewStyle> = {
-    sm: styles.smSize,
-    md: styles.mdSize,
-    lg: styles.lgSize,
-  };
-  const variantLabel: Record<ButtonVariant, TextStyle> = {
-    primary: styles.primaryLabel,
-    secondary: styles.secondaryLabel,
-    outline: styles.outlineLabel,
-    ghost: styles.ghostLabel,
-    danger: styles.dangerLabel,
-  };
-  const sizeLabel: Record<ButtonSize, TextStyle> = {
-    sm: styles.smLabel,
-    md: styles.mdLabel,
-    lg: styles.lgLabel,
-  };
-
-  const buttonStyle: ViewStyle[] = [
-    styles.base,
-    variantBase[variant],
-    sizeBase[size],
-    ...(fullWidth ? [styles.fullWidth] : []),
-    ...(isDisabled ? [styles.disabled] : []),
-    ...(style ? [style] : []),
-  ];
-
-  const labelStyle = [
+  const labelStyle: StyleProp<TextStyle> = [
     styles.label,
-    variantLabel[variant],
-    sizeLabel[size],
-    isDisabled && styles.disabledLabel,
+    labelStylesByVariant[variant],
+    labelStylesBySize[size],
+    isDisabled ? styles.disabledLabel : undefined,
     textStyle,
   ];
 
@@ -106,8 +73,13 @@ export const Button: React.FC<ButtonProps> = ({
       onPress={handlePress}
       disabled={isDisabled}
       style={({ pressed }) => [
-        ...buttonStyle,
-        pressed && !isDisabled && styles.pressed,
+        styles.base,
+        buttonStylesByVariant[variant],
+        buttonStylesBySize[size],
+        fullWidth ? styles.fullWidth : undefined,
+        isDisabled ? styles.disabled : undefined,
+        pressed && !isDisabled ? styles.pressed : undefined,
+        style,
       ]}
       {...pressableProps}
     >
@@ -215,3 +187,31 @@ const styles = StyleSheet.create({
     ...typography.h4,
   },
 });
+
+const buttonStylesByVariant: Record<ButtonVariant, ViewStyle> = {
+  primary: styles.primaryBase,
+  secondary: styles.secondaryBase,
+  outline: styles.outlineBase,
+  ghost: styles.ghostBase,
+  danger: styles.dangerBase,
+};
+
+const buttonStylesBySize: Record<ButtonSize, ViewStyle> = {
+  sm: styles.smSize,
+  md: styles.mdSize,
+  lg: styles.lgSize,
+};
+
+const labelStylesByVariant: Record<ButtonVariant, TextStyle> = {
+  primary: styles.primaryLabel,
+  secondary: styles.secondaryLabel,
+  outline: styles.outlineLabel,
+  ghost: styles.ghostLabel,
+  danger: styles.dangerLabel,
+};
+
+const labelStylesBySize: Record<ButtonSize, TextStyle> = {
+  sm: styles.smLabel,
+  md: styles.mdLabel,
+  lg: styles.lgLabel,
+};

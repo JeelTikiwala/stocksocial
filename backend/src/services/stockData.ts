@@ -4,7 +4,6 @@ import axios from 'axios';
 // Uses Yahoo Finance (free, no API key) with in-memory cache and mock fallbacks
 
 const YAHOO_FINANCE_V8 = 'https://query1.finance.yahoo.com/v8/finance';
-const YAHOO_FINANCE_V6 = 'https://query2.finance.yahoo.com/v6/finance';
 const GOOGLE_NEWS_RSS = 'https://news.google.com/rss/search';
 
 // Simple in-memory cache (TTL in ms)

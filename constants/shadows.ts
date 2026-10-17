@@ -1,4 +1,4 @@
-import { Platform, ViewStyle } from 'react-native';
+import { ViewStyle } from 'react-native';
 
 type ShadowStyle = Pick<
   ViewStyle,

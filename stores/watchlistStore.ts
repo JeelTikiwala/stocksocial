@@ -7,7 +7,6 @@ interface WatchlistState {
   addTicker: (ticker: string) => void;
   removeTicker: (ticker: string) => void;
   toggleTicker: (ticker: string) => void;
-  hasTicker: (ticker: string) => boolean;
 }
 
 const createStorage = () => {
@@ -60,7 +59,6 @@ export const useWatchlistStore = create<WatchlistState>()(
           get().addTicker(normalized);
         }
       },
-      hasTicker: (ticker: string) => get().tickers.includes(ticker.toUpperCase().trim()),
     }),
     {
       name: 'watchlist-storage',
@@ -69,3 +67,4 @@ export const useWatchlistStore = create<WatchlistState>()(
     }
   )
 );
+

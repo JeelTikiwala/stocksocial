@@ -10,7 +10,6 @@ import {
 import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius } from '@/constants';
 import { Card, Avatar, EmptyState } from '@/components/ui';
-import { HeartIcon, MessageIcon } from '@/components/ui/Icons';
 import { formatRelativeTime } from '@/utils';
 import { api } from '@/services/api';
 

@@ -8,3 +8,4 @@ export default function SettingsRedirectScreen() {
 
   return null;
 }
+

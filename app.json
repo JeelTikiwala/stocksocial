@@ -1,13 +1,12 @@
 {
   "expo": {
-    "name": "StockSocial",
-    "slug": "stocksocial",
+    "name": "StockCircle",
+    "slug": "stockcircle",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "stocksocial",
+    "scheme": "stockcircle",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -31,11 +30,9 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-font",
       "expo-web-browser",
       "expo-secure-store",
-      "expo-router",
-      "expo-sharing"
+      "expo-router"
     ],
     "extra": {
       "router": {

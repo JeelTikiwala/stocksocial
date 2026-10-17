@@ -7,7 +7,7 @@ import {
   Pressable,
   PressableProps,
 } from 'react-native';
-import { colors, borderRadius, spacing } from '@/constants';
+import { colors, borderRadius, spacing, cardShadow } from '@/constants';
 
 interface CardProps extends Omit<PressableProps, 'style'> {
   children: React.ReactNode;
@@ -61,8 +61,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   elevated: {
-    borderWidth: 1,
-    borderColor: colors.borderLight,
+    ...cardShadow,
   },
   outlined: {
     borderWidth: 1,
@@ -72,6 +71,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.offWhite,
   },
   pressed: {
-    opacity: 0.72,
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
   },
 });

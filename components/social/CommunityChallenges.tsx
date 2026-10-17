@@ -8,7 +8,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { colors, spacing, typography, borderRadius } from '@/constants';
-import { Card, Button } from '@/components/ui';
+import { Card } from '@/components/ui';
 import { formatIndianCurrency } from '@/utils';
 
 type ChallengeStatus = 'active' | 'completed' | 'upcoming';

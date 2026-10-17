@@ -8,12 +8,12 @@ interface AuthState {
   user: User | null;
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
+  hasHydrated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User) => void;
-  setTokens: (tokens: AuthTokens) => void;
+  setHasHydrated: (hasHydrated: boolean) => void;
   refreshToken: () => Promise<void>;
 }
 
@@ -59,8 +59,34 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
     if (typeof apiMessage === 'string' && apiMessage.trim().length > 0) {
       return apiMessage;
     }
+    return fallback;
+  }
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
   }
   return fallback;
+};
+
+const parseAuthResponse = (response: { data?: any }) => {
+  const payload = response.data?.data;
+  const user = payload?.user as User | undefined;
+  const accessToken = payload?.accessToken;
+  const refreshToken = payload?.refreshToken;
+
+  if (
+    !user?.id ||
+    typeof accessToken !== 'string' ||
+    accessToken.length === 0 ||
+    typeof refreshToken !== 'string' ||
+    refreshToken.length === 0
+  ) {
+    throw new Error('The server returned an invalid authentication response.');
+  }
+
+  return {
+    user,
+    tokens: { accessToken, refreshToken } satisfies AuthTokens,
+  };
 };
 
 export const useAuthStore = create<AuthState>()(
@@ -69,39 +95,28 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       tokens: null,
       isAuthenticated: false,
-      isLoading: false,
+      hasHydrated: false,
 
       login: async (email: string, password: string) => {
-        set({ isLoading: true });
-
         try {
           const normalizedEmail = email.trim().toLowerCase();
           const response = await axios.post(`${AUTH_API_BASE_URL}/auth/login`, {
             email: normalizedEmail,
             password,
           });
-          const payload = response.data?.data;
-          const user = payload?.user as User;
-          const tokens: AuthTokens = {
-            accessToken: payload?.accessToken,
-            refreshToken: payload?.refreshToken,
-          };
+          const { user, tokens } = parseAuthResponse(response);
 
           set({
             user,
             tokens,
             isAuthenticated: true,
-            isLoading: false,
           });
         } catch (error) {
-          set({ isLoading: false });
           throw new Error(getApiErrorMessage(error, 'Unable to sign in. Please try again.'));
         }
       },
 
       register: async (email: string, username: string, password: string) => {
-        set({ isLoading: true });
-
         try {
           const normalizedEmail = email.trim().toLowerCase();
           const normalizedUsername = username.trim();
@@ -110,27 +125,29 @@ export const useAuthStore = create<AuthState>()(
             username: normalizedUsername,
             password,
           });
-          const payload = response.data?.data;
-          const user = payload?.user as User;
-          const tokens: AuthTokens = {
-            accessToken: payload?.accessToken,
-            refreshToken: payload?.refreshToken,
-          };
+          const { user, tokens } = parseAuthResponse(response);
 
           set({
             user,
             tokens,
             isAuthenticated: true,
-            isLoading: false,
           });
         } catch (error) {
-          set({ isLoading: false });
           throw new Error(getApiErrorMessage(error, 'Unable to create account. Please try again.'));
         }
       },
 
       logout: async () => {
         const { tokens } = get();
+
+        // Clear the local session immediately so navigation never waits on the
+        // network or leaves stale credentials behind.
+        set({
+          user: null,
+          tokens: null,
+          isAuthenticated: false,
+        });
+
         if (tokens?.accessToken) {
           try {
             await axios.post(
@@ -142,24 +159,18 @@ export const useAuthStore = create<AuthState>()(
                 },
               }
             );
-          } catch (e) {
+          } catch {
             // Ignore remote logout failures and clear local state.
           }
         }
-
-        set({
-          user: null,
-          tokens: null,
-          isAuthenticated: false,
-        });
       },
 
       setUser: (user: User) => {
         set({ user });
       },
 
-      setTokens: (tokens: AuthTokens) => {
-        set({ tokens, isAuthenticated: true });
+      setHasHydrated: (hasHydrated: boolean) => {
+        set({ hasHydrated });
       },
 
       refreshToken: async () => {
@@ -171,7 +182,11 @@ export const useAuthStore = create<AuthState>()(
         const response = await axios.post(`${AUTH_API_BASE_URL}/auth/refresh`, {
           refreshToken: tokens.refreshToken,
         });
-        const accessToken = response.data?.data?.accessToken as string;
+        const accessToken = response.data?.data?.accessToken;
+
+        if (typeof accessToken !== 'string' || accessToken.length === 0) {
+          throw new Error('The server returned an invalid token refresh response.');
+        }
 
         set({
           tokens: {
@@ -189,6 +204,9 @@ export const useAuthStore = create<AuthState>()(
         tokens: state.tokens,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: (state) => (rehydratedState) => {
+        (rehydratedState ?? state).setHasHydrated(true);
+      },
     }
   )
 );

@@ -13,28 +13,16 @@ export interface User {
   followersCount?: number;
   followingCount?: number;
 }
-
 export interface PublicProfile extends User {
   followersCount: number;
   followingCount: number;
   isFollowing: boolean;
 }
 
-// Auth types
+// Authentication
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface RegisterCredentials {
-  email: string;
-  username: string;
-  password: string;
 }
 
 // Portfolio types
@@ -52,13 +40,6 @@ export interface Holding {
   logoUrl?: string;
 }
 
-export interface PortfolioSummary {
-  totalValue: number;
-  todayChangePct: number;
-  todayChangePnl: number;
-  allTimeChangePct: number;
-}
-
 export interface ChartSegment {
   ticker: string;
   allocationPct: number;
@@ -67,18 +48,6 @@ export interface ChartSegment {
   logoUrl?: string;
   companyName?: string;
   currentValue?: number;
-}
-
-// Trade types
-export type TradeType = 'BUY' | 'SELL';
-
-export interface Trade {
-  id: string;
-  ticker: string;
-  type: TradeType;
-  quantity: number;
-  price: number;
-  executedAt: string;
 }
 
 // Post types
@@ -106,12 +75,6 @@ export interface Comment {
   createdAt: string;
 }
 
-// Feed types
-export interface FeedResponse {
-  posts: Post[];
-  nextCursor: string | null;
-}
-
 // Markets types
 export interface MarketEvent {
   id: string;
@@ -129,52 +92,3 @@ export interface EarningsDay {
     logoUrl?: string;
   }[];
 }
-
-export interface FeaturedList {
-  id: string;
-  name: string;
-  description: string;
-  stocks: {
-    ticker: string;
-    companyName: string;
-    logoUrl?: string;
-  }[];
-}
-
-export interface FearGreedIndex {
-  score: number;
-  label: 'Extreme Fear' | 'Fear' | 'Neutral' | 'Greed' | 'Extreme Greed';
-}
-
-// Broker types
-export type BrokerName = 'ZERODHA' | 'GROWW' | 'UPSTOX';
-
-export interface BrokerStatus {
-  connected: boolean;
-  broker: BrokerName | null;
-  lastSynced: string | null;
-}
-
-// API Response types
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-}
-
-export interface ApiError {
-  message: string;
-  code?: string;
-  errors?: Record<string, string[]>;
-}
-
-// Navigation types
-export type RootStackParamList = {
-  '(tabs)': undefined;
-  '(auth)/welcome': undefined;
-  '(auth)/login': undefined;
-  '(auth)/register': undefined;
-  '(auth)/link-broker': undefined;
-  'stock/[ticker]': { ticker: string };
-  'profile/[username]': { username: string };
-  'post/[id]': { id: string };
-};

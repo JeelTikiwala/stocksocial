@@ -17,7 +17,6 @@ export const formatIndianCurrency = (
 
   return formatter.format(value);
 };
-
 /**
  * Format a number using Indian number system without currency symbol
  * Example: 123456.78 -> "1,23,456.78"
@@ -126,19 +125,4 @@ export const getInitials = (name: string): string => {
     return parts[0].slice(0, 2).toUpperCase();
   }
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-};
-
-/**
- * Validate email format
- */
-export const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-/**
- * Generate a random color from the chart palette
- */
-export const getChartColor = (index: number, palette: readonly string[]): string => {
-  return palette[index % palette.length];
 };

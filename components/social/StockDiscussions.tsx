@@ -180,7 +180,7 @@ export const StockDiscussions: React.FC<StockDiscussionsProps> = ({ style }) => 
     });
   };
 
-  const handleFlag = (postId: string) => {
+  const handleFlag = (_postId: string) => {
     Alert.alert('Flagged', 'Thanks. Our moderators will review this post.');
   };
 

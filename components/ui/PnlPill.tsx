@@ -72,66 +72,6 @@ export const PnlPill: React.FC<PnlPillProps> = ({
   );
 };
 
-// Simple inline P&L text (without pill background)
-interface PnlTextProps {
-  value: number;
-  format?: 'percentage' | 'currency';
-  size?: 'sm' | 'md' | 'lg';
-  showSign?: boolean;
-  style?: TextStyle;
-}
-
-export const PnlText: React.FC<PnlTextProps> = ({
-  value,
-  format = 'percentage',
-  size = 'md',
-  showSign = true,
-  style,
-}) => {
-  const isPositive = value >= 0;
-  const isNeutral = value === 0;
-
-  const getTextColor = () => {
-    if (isNeutral) return colors.textSecondary;
-    return isPositive ? colors.gain : colors.loss;
-  };
-
-  const getSizeStyle = (): TextStyle => {
-    switch (size) {
-      case 'sm':
-        return typography.small;
-      case 'lg':
-        return typography.h2;
-      default:
-        return typography.bodyMd;
-    }
-  };
-
-  const formatValue = () => {
-    switch (format) {
-      case 'percentage':
-        return formatPercentage(value, { showSign });
-      case 'currency':
-        const sign = showSign && value > 0 ? '+' : '';
-        return `${sign}₹${Math.abs(value).toFixed(2)}`;
-      default:
-        return formatPercentage(value, { showSign });
-    }
-  };
-
-  return (
-    <Text
-      style={[
-        getSizeStyle(),
-        { color: getTextColor(), fontWeight: '600' },
-        style,
-      ]}
-    >
-      {formatValue()}
-    </Text>
-  );
-};
-
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: spacing.sm,

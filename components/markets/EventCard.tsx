@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, Pressable, ViewStyle } from 'react-native';
+import { StyleSheet, View, Text, ViewStyle } from 'react-native';
 import { format } from 'date-fns';
 import { colors, spacing, typography, borderRadius } from '@/constants';
 import { Card } from '@/components/ui';

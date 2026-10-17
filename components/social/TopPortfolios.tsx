@@ -80,7 +80,6 @@ export const TopPortfolios: React.FC<TopPortfoliosProps> = ({ style }) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | null>(null);
 
   const timeFilters: { key: TimeFilter; label: string }[] = [
     { key: '1w', label: 'This Week' },
@@ -211,7 +210,6 @@ export const TopPortfolios: React.FC<TopPortfoliosProps> = ({ style }) => {
             <Pressable
               key={entry.user.id}
               onPress={() => {
-                setSelectedEntry(entry);
                 router.push(`/profile/${entry.user.username}`);
               }}
               style={[

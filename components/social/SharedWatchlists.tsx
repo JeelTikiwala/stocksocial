@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { colors, spacing, typography, borderRadius } from '@/constants';
-import { Card, Avatar, Button } from '@/components/ui';
+import { Card, Avatar } from '@/components/ui';
 
 interface WatchlistStock {
   ticker: string;

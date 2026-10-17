@@ -29,7 +29,7 @@ router.get('/search', async (req, res, next) => {
 });
 
 // GET /stocks/popular - List popular Indian stocks
-router.get('/popular', async (req, res, next) => {
+router.get('/popular', async (_req, res, next) => {
   try {
     res.json({ success: true, data: POPULAR_INDIAN_STOCKS });
   } catch (error) {
@@ -38,7 +38,7 @@ router.get('/popular', async (req, res, next) => {
 });
 
 // GET /stocks/indices - Get major index data
-router.get('/indices', async (req, res, next) => {
+router.get('/indices', async (_req, res, next) => {
   try {
     const indices = await getIndexData();
     res.json({ success: true, data: indices });
@@ -189,7 +189,7 @@ router.get('/:ticker/activity', authenticate, async (req: AuthRequest, res: Resp
 });
 
 // POST /stocks/:ticker/track - Track a stock view/interest (for analytics)
-router.post('/:ticker/track', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post('/:ticker/track', authenticate, async (req: AuthRequest, res: Response, _next: NextFunction) => {
   try {
     const { ticker } = req.params;
     const { action } = req.body; // 'view', 'search', 'watchlist_add', etc.

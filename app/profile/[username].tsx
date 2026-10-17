@@ -7,7 +7,7 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, router } from 'expo-router';
+import { router } from 'expo-router';
 import { colors, spacing, typography } from '@/constants';
 import { Avatar, Button, VerifiedBadge, ProBadge, Card, ArrowLeftIcon } from '@/components/ui';
 import { DonutChart } from '@/components/charts';
@@ -74,7 +74,6 @@ const mockPosts: Post[] = [
 type ProfileTab = 'holdings' | 'posts' | 'trades' | 'comments';
 
 export default function ProfileScreen() {
-  const { username } = useLocalSearchParams<{ username: string }>();
   const [activeTab, setActiveTab] = useState<ProfileTab>('holdings');
   const [isFollowing, setIsFollowing] = useState(mockProfile.isFollowing);
 
