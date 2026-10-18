@@ -1,592 +1,130 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  ScrollView,
-  RefreshControl,
-  Pressable,
-  Modal,
-  Alert,
-} from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { StyleSheet, View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { colors, spacing, typography, borderRadius } from '@/constants';
-import { Card, Button, Input, HeartIcon, MessageIcon, BookmarkIcon } from '@/components/ui';
-import { api } from '@/services/api';
-import { useAuthStore } from '@/stores';
+import { Card, PlusIcon, XIcon, ChevronRightIcon } from '@/components/ui';
+import { MiniSparkline } from '@/components/charts';
+import { AsOfBanner, LoadingBlock, ErrorBlock, Disclaimer } from '@/components/screener';
+import { Cell } from '@/components/screener/ResultsTable';
+import { AddSymbolModal } from '@/components/watchlist/AddSymbolModal';
+import { useMarketPulse, useWatchlistRows } from '@/hooks/useMarketData';
+import { useLiveQuotes } from '@/hooks/useLive';
+import { useWatchlistStore } from '@/stores';
+import { price, signedPct, ivPct } from '@/utils';
 
-type FeedTab = 'forYou' | 'following' | 'news';
+const INDICES = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY'];
 
-interface FeedPost {
-  id: string;
-  userId?: string;
-  author: string;
-  content: string;
-  createdAt: string;
-  attachedTicker?: string | null;
-  likeCount: number;
-  commentCount: number;
-  isLiked: boolean;
-  isSaved: boolean;
-}
-
-const seedPosts: FeedPost[] = [
-  {
-    id: 'p1',
-    author: 'Rahul Sharma',
-    content: 'Just increased my position in HDFC Bank after the recent dip. Fundamentals remain strong.',
-    createdAt: '2h ago',
-    attachedTicker: 'HDFCBANK',
-    likeCount: 12,
-    commentCount: 4,
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: 'p2',
-    author: 'Priya Patel',
-    content: 'Market momentum looks healthy. Watching IT names for next breakout setup.',
-    createdAt: '4h ago',
-    attachedTicker: 'TCS',
-    likeCount: 8,
-    commentCount: 1,
-    isLiked: false,
-    isSaved: false,
-  },
-];
-
-function parseTickerTag(content: string): string | undefined {
-  const match = content.match(/@([A-Za-z][A-Za-z0-9]{0,14})/);
-  return match?.[1]?.toUpperCase();
-}
-
-export default function HomeScreen() {
-  const user = useAuthStore((state) => state.user);
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<FeedTab>('forYou');
-  const [showComposer, setShowComposer] = useState(false);
-  const [showCommentSheet, setShowCommentSheet] = useState(false);
-  const [postText, setPostText] = useState('');
-  const [commentText, setCommentText] = useState('');
-  const [commentTargetPostId, setCommentTargetPostId] = useState<string | null>(null);
-  const [posts, setPosts] = useState<FeedPost[]>(seedPosts);
-  const [indexSnapshot, setIndexSnapshot] = useState('NIFTY 50 +0.84% · SENSEX +0.79% · VIX -2.1%');
-
-  const commentTargetPost = useMemo(
-    () => posts.find((post) => post.id === commentTargetPostId) || null,
-    [posts, commentTargetPostId]
-  );
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-
-    // Fetch live index data for snapshot card
-    try {
-      const indicesRes = await api.stocks.getIndices();
-      const indices = indicesRes.data?.data || [];
-      if (indices.length > 0) {
-        const parts = indices.map((idx: { name: string; changePercent: number }) => {
-          const sign = idx.changePercent >= 0 ? '+' : '';
-          return `${idx.name} ${sign}${idx.changePercent.toFixed(2)}%`;
-        });
-        setIndexSnapshot(parts.join(' · '));
-      }
-    } catch {
-      // Keep default snapshot
-    }
-
-    // Fetch feed posts
-    try {
-      const response = await api.feed.get();
-      const fromApi = response.data?.data?.posts || [];
-      if (fromApi.length > 0) {
-        setPosts(
-          fromApi.map((p: any) => ({
-            id: p.id,
-            userId: p.userId,
-            author: p.user?.displayName || p.user?.username || 'User',
-            content: p.content,
-            createdAt: 'live',
-            attachedTicker: p.attachedTicker,
-            likeCount: p.likeCount || 0,
-            commentCount: p.commentCount || 0,
-            isLiked: !!p.isLiked,
-            isSaved: !!p.isSaved,
-          }))
-        );
-      }
-    } catch {
-      // Keep local feed if API unavailable.
-    }
-    setRefreshing(false);
-  };
-
-  const handlePublishPost = () => {
-    const trimmed = postText.trim();
-    if (!trimmed) return;
-
-    const attachedTicker = parseTickerTag(trimmed) || null;
-    const optimisticPost: FeedPost = {
-      id: `p-${Date.now()}`,
-      userId: user?.id,
-      author: user?.displayName || user?.username || 'You',
-      content: trimmed,
-      createdAt: 'now',
-      attachedTicker,
-      likeCount: 0,
-      commentCount: 0,
-      isLiked: false,
-      isSaved: false,
-    };
-
-    setPosts((prev) => [optimisticPost, ...prev]);
-    setPostText('');
-    setShowComposer(false);
-
-    api.feed
-      .createPost({ content: trimmed, attachedTicker: attachedTicker || undefined })
-      .then((response) => {
-        const p = response.data?.data;
-        if (!p) return;
-        setPosts((prev) =>
-          prev.map((item) =>
-            item.id === optimisticPost.id
-              ? {
-                  id: p.id,
-                  userId: p.userId,
-                  author: p.user?.displayName || p.user?.username || 'You',
-                  content: p.content,
-                  createdAt: 'live',
-                  attachedTicker: p.attachedTicker,
-                  likeCount: p.likeCount || 0,
-                  commentCount: p.commentCount || 0,
-                  isLiked: !!p.isLiked,
-                  isSaved: !!p.isSaved,
-                }
-              : item
-          )
-        );
-      })
-      .catch(() => {
-        // Keep optimistic post if network fails.
-      });
-  };
-
-  const toggleLike = async (postId: string) => {
-    let wasLiked = false;
-    setPosts((prev) =>
-      prev.map((post) => {
-        if (post.id !== postId) return post;
-        wasLiked = post.isLiked;
-        return {
-          ...post,
-          isLiked: !post.isLiked,
-          likeCount: post.isLiked ? Math.max(0, post.likeCount - 1) : post.likeCount + 1,
-        };
-      })
-    );
-
-    try {
-      if (wasLiked) {
-        await api.feed.unlikePost(postId);
-      } else {
-        await api.feed.likePost(postId);
-      }
-    } catch {
-      setPosts((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? {
-                ...post,
-                isLiked: wasLiked,
-                likeCount: wasLiked ? post.likeCount + 1 : Math.max(0, post.likeCount - 1),
-              }
-            : post
-        )
-      );
-    }
-  };
-
-  const toggleSave = async (postId: string) => {
-    let wasSaved = false;
-    setPosts((prev) =>
-      prev.map((post) => {
-        if (post.id !== postId) return post;
-        wasSaved = post.isSaved;
-        return { ...post, isSaved: !post.isSaved };
-      })
-    );
-
-    try {
-      if (wasSaved) {
-        await api.feed.unsavePost(postId);
-      } else {
-        await api.feed.savePost(postId);
-      }
-    } catch {
-      setPosts((prev) =>
-        prev.map((post) => (post.id === postId ? { ...post, isSaved: wasSaved } : post))
-      );
-    }
-  };
-
-  const openCommentComposer = (postId: string) => {
-    setCommentTargetPostId(postId);
-    setCommentText('');
-    setShowCommentSheet(true);
-  };
-
-  const submitComment = async () => {
-    const content = commentText.trim();
-    if (!content || !commentTargetPostId) return;
-
-    setPosts((prev) =>
-      prev.map((post) =>
-        post.id === commentTargetPostId ? { ...post, commentCount: post.commentCount + 1 } : post
-      )
-    );
-    setCommentText('');
-    setShowCommentSheet(false);
-
-    try {
-      await api.feed.createComment(commentTargetPostId, content);
-    } catch {
-      // Keep optimistic comment count for responsiveness.
-    }
-  };
-
-  const deletePost = (postId: string) => {
-    Alert.alert('Delete post?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          const previous = posts;
-          setPosts((prev) => prev.filter((post) => post.id !== postId));
-          try {
-            await api.feed.deletePost(postId);
-          } catch {
-            setPosts(previous);
-          }
-        },
-      },
-    ]);
-  };
-
-  useEffect(() => {
-    onRefresh();
-  }, []);
+export default function WatchlistScreen() {
+  const tickers = useWatchlistStore((s) => s.tickers);
+  const toggle = useWatchlistStore((s) => s.toggleTicker);
+  const remove = useWatchlistStore((s) => s.removeTicker);
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const rows = useWatchlistRows(tickers);
+  const pulse = useMarketPulse();
+  const quotes = useLiveQuotes(useMemo(() => Array.from(new Set([...INDICES, ...tickers])), [tickers]));
+  const stripRows = useWatchlistRows(INDICES);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>StockCircle</Text>
-      </View>
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={rows.isRefetching} onRefresh={() => { rows.refetch(); pulse.refetch(); }} />}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.brand}>Delta</Text>
+            <Text style={styles.sub}>Watchlist</Text>
+          </View>
+          <View style={styles.headerActions}>
+            <Pressable onPress={() => setEditing((e) => !e)} style={styles.actionBtn}><Text style={styles.actionText}>{editing ? 'Done' : 'Edit'}</Text></Pressable>
+            <Pressable onPress={() => setAdding(true)} style={[styles.actionBtn, styles.actionPrimary]} accessibilityLabel="Add symbol"><PlusIcon size={18} color={colors.white} /></Pressable>
+          </View>
+        </View>
+        <AsOfBanner />
 
-      <View style={styles.tabBar}>
-        {(['forYou', 'following', 'news'] as FeedTab[]).map((tab) => (
-          <Pressable key={tab} onPress={() => setActiveTab(tab)} style={styles.tab}>
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === 'forYou' ? 'For You' : tab === 'following' ? 'Following' : 'News'}
-            </Text>
-            {activeTab === tab && <View style={styles.tabIndicator} />}
+        {/* Index strip (live when available) */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
+          {(stripRows.data ?? []).map((r) => {
+            const q = quotes[r.symbol];
+            const ltp = q?.ltp ?? r.close;
+            const chg = q?.changePct ?? r.changePct;
+            return (
+              <Card key={r.symbol} onPress={() => router.push(`/stock/${r.symbol}` as never)} style={styles.indexCard} padding="sm" variant="outlined">
+                <Text style={styles.indexName}>{r.symbol}</Text>
+                <Text style={styles.indexValue}>{price(ltp)}</Text>
+                <Text style={[styles.indexChange, { color: chg >= 0 ? colors.gain : colors.loss }]}>{signedPct(chg)}{q ? ' ·' : ''}{q ? <Text style={{ color: colors.gain }}> live</Text> : ''}</Text>
+              </Card>
+            );
+          })}
+        </ScrollView>
+
+        {pulse.data && (
+          <Pressable onPress={() => router.push('/tools/market-pulse' as never)} style={styles.pulseRow}>
+            <Text style={styles.pulseItem}>Breadth <Text style={{ color: colors.gain }}>{pulse.data.breadth.advancers}</Text>/<Text style={{ color: colors.loss }}>{pulse.data.breadth.decliners}</Text></Text>
+            <Text style={styles.pulseItem}>VIX {pulse.data.vix?.value.toFixed(1) ?? '—'}</Text>
+            <Text style={styles.pulseItem}>PCR {pulse.data.pcr.niftyOi?.toFixed(2) ?? '—'}</Text>
+            <Text style={styles.pulseItem}>Straddle ₹{pulse.data.niftyStraddle?.straddlePrice.toFixed(0) ?? '—'}</Text>
+            <ChevronRightIcon size={16} color={colors.textTertiary} />
           </Pressable>
-        ))}
-      </View>
+        )}
 
-      <ScrollView
-        style={styles.feed}
-        contentContainerStyle={styles.feedContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.teal} />}
-      >
-        <Card style={styles.snapshotCard}>
-          <Text style={styles.cardTitle}>Quick Snapshot</Text>
-          <Text style={styles.cardText}>{indexSnapshot}</Text>
-        </Card>
-
-        <Card style={styles.composerCard}>
-          <Text style={styles.cardTitle}>Share a post</Text>
-          <Pressable style={styles.inlineComposer} onPress={() => setShowComposer(true)}>
-            <Text style={styles.inlineComposerText}>What are you investing in today? (Use @TCS to tag ticker)</Text>
-          </Pressable>
-        </Card>
-
-        {posts.map((post) => {
-          const canDelete = !!user?.id && post.userId === user.id;
-          return (
-            <Card key={post.id} style={styles.card}>
-              <View style={styles.postHeader}>
-                <Text style={styles.cardTitle}>{post.author}</Text>
-                <View style={styles.postHeaderRight}>
-                  <Text style={styles.timeText}>{post.createdAt}</Text>
-                  {canDelete && (
-                    <Pressable onPress={() => deletePost(post.id)}>
-                      <Text style={styles.deleteText}>Delete</Text>
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-
-              <Text style={styles.cardText}>{post.content}</Text>
-              {!!post.attachedTicker && (
-                <Pressable style={styles.tickerBadge}>
-                  <Text style={styles.tickerText}>@{post.attachedTicker}</Text>
+        {rows.isLoading ? <LoadingBlock rows={5} /> : rows.isError ? <ErrorBlock error={rows.error} onRetry={rows.refetch} /> : (
+          <Card style={styles.listCard} padding="xs" variant="elevated">
+            {(rows.data ?? []).length === 0 && <Text style={styles.empty}>Your watchlist is empty. Tap + to add symbols.</Text>}
+            {(rows.data ?? []).map((r, i, arr) => {
+              const q = quotes[r.symbol];
+              const ltp = q?.ltp ?? r.close;
+              const chg = q?.changePct ?? r.changePct;
+              return (
+                <Pressable key={r.symbol} onPress={() => (editing ? remove(r.symbol) : router.push(`/stock/${r.symbol}` as never))} style={[styles.row, i < arr.length - 1 && styles.rowBorder]}>
+                  {editing && <View style={styles.removeBtn}><XIcon size={14} color={colors.loss} /></View>}
+                  <View style={{ flex: 1.6, minWidth: 0 }}>
+                    <Text style={styles.sym} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{r.symbol}</Text>
+                    <Text style={styles.name} numberOfLines={1}>{r.isIndex ? 'Index' : r.sector} · IV {ivPct(r.atmIv)}{r.ivRank != null ? ` · rank ${r.ivRank.toFixed(0)}` : ''}</Text>
+                  </View>
+                  <MiniSparkline data={r.sparkline} width={54} height={26} />
+                  <View style={styles.priceCol}>
+                    <Text style={styles.price}>{price(ltp)}</Text>
+                    <Text style={[styles.chg, { color: chg >= 0 ? colors.gain : colors.loss }]}>{signedPct(chg)}</Text>
+                  </View>
+                  <View style={styles.readCol}><Cell col={{ key: 'oi', label: '', type: 'badge' }} value={r.oiRead} /></View>
                 </Pressable>
-              )}
-
-              <View style={styles.actionsRow}>
-                <Pressable style={styles.actionButton} onPress={() => toggleLike(post.id)}>
-                  <HeartIcon size={18} color={post.isLiked ? colors.loss : colors.textSecondary} filled={post.isLiked} />
-                  <Text style={[styles.actionText, post.isLiked && styles.actionTextActive]}>{post.likeCount}</Text>
-                </Pressable>
-
-                <Pressable style={styles.actionButton} onPress={() => openCommentComposer(post.id)}>
-                  <MessageIcon size={18} color={colors.textSecondary} />
-                  <Text style={styles.actionText}>{post.commentCount}</Text>
-                </Pressable>
-
-                <Pressable style={styles.actionButton} onPress={() => toggleSave(post.id)}>
-                  <BookmarkIcon size={18} color={post.isSaved ? colors.teal : colors.textSecondary} filled={post.isSaved} />
-                  <Text style={[styles.actionText, post.isSaved && styles.actionTextSaved]}>
-                    {post.isSaved ? 'Saved' : 'Save'}
-                  </Text>
-                </Pressable>
-              </View>
-            </Card>
-          );
-        })}
+              );
+            })}
+          </Card>
+        )}
+        <Disclaimer />
       </ScrollView>
-
-      <Pressable style={styles.fab} onPress={() => setShowComposer(true)}>
-        <Text style={styles.fabText}>+</Text>
-      </Pressable>
-
-      <Modal visible={showComposer} animationType="slide" transparent onRequestClose={() => setShowComposer(false)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setShowComposer(false)}>
-          <Pressable style={styles.bottomSheet} onPress={() => {}}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Create Post</Text>
-            <Input
-              value={postText}
-              onChangeText={setPostText}
-              placeholder="Share your market thought..."
-              multiline
-              inputStyle={styles.postInput}
-            />
-            <Button title="Publish" onPress={handlePublishPost} style={styles.publishButton} />
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <Modal visible={showCommentSheet} animationType="slide" transparent onRequestClose={() => setShowCommentSheet(false)}>
-        <Pressable style={styles.modalBackdrop} onPress={() => setShowCommentSheet(false)}>
-          <Pressable style={styles.bottomSheet} onPress={() => {}}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Comment</Text>
-            <Text style={styles.sheetSubTitle}>{commentTargetPost?.author || 'Post'}</Text>
-            <Input
-              value={commentText}
-              onChangeText={setCommentText}
-              placeholder="Write your comment"
-              multiline
-              inputStyle={styles.postInput}
-            />
-            <Button title="Post Comment" onPress={submitComment} style={styles.publishButton} />
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <AddSymbolModal visible={adding} onClose={() => setAdding(false)} selected={tickers} onToggle={toggle} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.offWhite,
-  },
-  header: {
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    ...typography.h2,
-    color: colors.teal,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: colors.white,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  tabText: {
-    ...typography.bodyMd,
-    color: colors.textSecondary,
-  },
-  tabTextActive: {
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    width: 40,
-    height: 2,
-    backgroundColor: colors.teal,
-    borderRadius: 1,
-  },
-  feed: {
-    flex: 1,
-  },
-  feedContent: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  snapshotCard: {
-    marginBottom: spacing.md,
-  },
-  composerCard: {
-    marginBottom: spacing.md,
-  },
-  inlineComposer: {
-    marginTop: spacing.xs,
-    backgroundColor: colors.offWhite,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-  },
-  inlineComposerText: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  card: {
-    marginBottom: spacing.md,
-  },
-  postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  postHeaderRight: {
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-  deleteText: {
-    ...typography.small,
-    color: colors.loss,
-  },
-  cardTitle: {
-    ...typography.h4,
-    color: colors.textPrimary,
-  },
-  timeText: {
-    ...typography.small,
-    color: colors.textTertiary,
-  },
-  cardText: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  tickerBadge: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.sm,
-    backgroundColor: colors.tealLight,
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
-  },
-  tickerText: {
-    ...typography.smallMd,
-    color: colors.teal,
-  },
-  actionsRow: {
-    marginTop: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    minHeight: 36,
-  },
-  actionText: {
-    ...typography.small,
-    color: colors.textSecondary,
-  },
-  actionTextActive: {
-    color: colors.loss,
-  },
-  actionTextSaved: {
-    color: colors.teal,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: spacing.lg,
-    right: spacing.md,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.purple,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.purple,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  fabText: {
-    color: colors.white,
-    fontSize: 28,
-    fontWeight: '300',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  bottomSheet: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xxl,
-    paddingTop: spacing.sm,
-  },
-  sheetHandle: {
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.border,
-    alignSelf: 'center',
-    marginBottom: spacing.md,
-  },
-  sheetTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  sheetSubTitle: {
-    ...typography.small,
-    color: colors.textTertiary,
-    marginBottom: spacing.sm,
-  },
-  postInput: {
-    minHeight: 120,
-    textAlignVertical: 'top',
-  },
-  publishButton: {
-    marginTop: spacing.md,
-  },
+  safe: { flex: 1, backgroundColor: 'transparent' },
+  content: { paddingBottom: spacing.tabBar },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  brand: { ...typography.h1, color: colors.indigo, letterSpacing: -1 },
+  sub: { ...typography.small, color: colors.textSecondary },
+  headerActions: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
+  actionBtn: { height: 36, minWidth: 36, paddingHorizontal: spacing.sm, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.7)', borderWidth: 1, borderColor: colors.borderLight, alignItems: 'center', justifyContent: 'center' },
+  actionPrimary: { backgroundColor: colors.indigo, borderColor: colors.indigo },
+  actionText: { ...typography.smallMd, color: colors.indigo },
+  strip: { paddingHorizontal: spacing.md, gap: spacing.xs, paddingBottom: spacing.xs },
+  indexCard: { width: 128 },
+  indexName: { ...typography.label, color: colors.textTertiary },
+  indexValue: { ...typography.h4, color: colors.textPrimary, marginTop: 2, fontVariant: ['tabular-nums'] },
+  indexChange: { ...typography.small, marginTop: 1 },
+  pulseRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.md, marginBottom: spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: 8, borderRadius: borderRadius.full, backgroundColor: 'rgba(255,255,255,0.55)', borderWidth: 1, borderColor: colors.borderLight },
+  pulseItem: { ...typography.small, color: colors.textSecondary, flex: 1 },
+  listCard: { marginHorizontal: spacing.md },
+  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm, paddingVertical: 10, gap: spacing.xs },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(15,13,12,0.06)' },
+  removeBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.lossBg, alignItems: 'center', justifyContent: 'center' },
+  sym: { ...typography.bodyMd, color: colors.textPrimary },
+  name: { fontSize: 11, color: colors.textTertiary, marginTop: 1 },
+  priceCol: { alignItems: 'flex-end', minWidth: 76 },
+  price: { ...typography.bodyMd, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
+  chg: { ...typography.small, fontVariant: ['tabular-nums'] },
+  readCol: { width: 82, alignItems: 'flex-end' },
+  empty: { ...typography.small, color: colors.textTertiary, padding: spacing.md, textAlign: 'center' },
 });

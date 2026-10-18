@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { prisma } from '../index';
+import { prisma } from '../db';
 import { badRequest, unauthorized } from '../middleware/errorHandler';
 import { authenticate, AuthRequest } from '../middleware/auth';
 
@@ -85,7 +85,6 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
         avatarUrl: true,
         isVerified: true,
         isPro: true,
-        isPublic: true,
         createdAt: true,
       },
     });
@@ -165,7 +164,6 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
           avatarUrl: user.avatarUrl,
           isVerified: user.isVerified,
           isPro: user.isPro,
-          isPublic: user.isPublic,
           createdAt: user.createdAt,
         },
         accessToken,

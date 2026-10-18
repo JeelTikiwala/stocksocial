@@ -1,7 +1,7 @@
 {
-  "name": "stockcircle-api",
+  "name": "delta-api",
   "version": "1.0.0",
-  "description": "StockCircle API Server",
+  "description": "Delta — NSE F&O analytics API",
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
@@ -10,7 +10,11 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "ingest": "ts-node --transpile-only src/scripts/ingest.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -19,7 +23,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "fflate": "^0.8.3",
     "jsonwebtoken": "^9.0.2",
+    "kiteconnect": "^5.3.0",
+    "ws": "^8.22.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -28,10 +35,14 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^22.0.0",
+    "@types/supertest": "^7.2.1",
+    "@types/ws": "^8.18.2",
     "prisma": "^5.22.0",
+    "supertest": "^7.3.1",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^5.0.5"
   },
   "engines": {
     "node": ">=18.0.0"

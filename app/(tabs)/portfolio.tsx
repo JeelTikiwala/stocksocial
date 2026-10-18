@@ -72,7 +72,7 @@ export default function PortfolioScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Portfolio</Text>
-          <Pressable style={styles.settingsButton} onPress={() => router.push('/(tabs)/settings')}>
+          <Pressable style={styles.settingsButton} onPress={() => router.push('/(tabs)/profile')}>
             <Text style={styles.settingsText}>Settings</Text>
           </Pressable>
         </View>
@@ -93,7 +93,7 @@ export default function PortfolioScreen() {
           <Button
             title="Open Settings"
             variant="ghost"
-            onPress={() => router.push('/(tabs)/settings')}
+            onPress={() => router.push('/(tabs)/profile')}
             style={styles.secondaryButton}
            />
          </View>
@@ -109,7 +109,7 @@ export default function PortfolioScreen() {
           <Pressable style={styles.syncButton}>
             <Text style={styles.syncText}>Sync</Text>
           </Pressable>
-          <Pressable style={styles.settingsButtonInline} onPress={() => router.push('/(tabs)/settings')}>
+          <Pressable style={styles.settingsButtonInline} onPress={() => router.push('/(tabs)/profile')}>
             <Text style={styles.settingsText}>Settings</Text>
           </Pressable>
         </View>
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.tabBar,
   },
   statusCard: {
     marginHorizontal: spacing.md,

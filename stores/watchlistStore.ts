@@ -38,7 +38,7 @@ const storage = createStorage();
 export const useWatchlistStore = create<WatchlistState>()(
   persist(
     (set, get) => ({
-      tickers: [],
+      tickers: ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'RELIANCE', 'HDFCBANK', 'TCS', 'INFY', 'TATAMOTORS'],
       addTicker: (ticker: string) =>
         set((state) => {
           const normalized = ticker.toUpperCase().trim();
@@ -61,7 +61,7 @@ export const useWatchlistStore = create<WatchlistState>()(
       },
     }),
     {
-      name: 'watchlist-storage',
+      name: 'delta-watchlist',
       storage: createJSONStorage(() => storage),
       partialize: (state) => ({ tickers: state.tickers }),
     }

@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { prisma } from '../index';
+import { prisma } from '../db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { badRequest, notFound } from '../middleware/errorHandler';
 
@@ -183,17 +183,6 @@ router.post('/:id/items', authenticate, async (req: AuthRequest, res: Response, 
       },
     });
 
-    // Create activity for public watchlists
-    if (watchlist.isPublic) {
-      await prisma.userActivity.create({
-        data: {
-          userId: req.userId!,
-          type: 'WATCHLIST_ADD',
-          ticker: ticker.toUpperCase(),
-          isPublic: true,
-        },
-      });
-    }
 
     res.json({ success: true, data: item });
   } catch (error) {
@@ -227,48 +216,6 @@ router.delete('/:id/items/:ticker', authenticate, async (req: AuthRequest, res: 
   }
 });
 
-// GET /watchlist/public - Get public watchlists from other users
-router.get('/public/browse', async (req, res, next) => {
-  try {
-    const limit = parseInt(req.query.limit as string) || 20;
-
-    const watchlists = await prisma.watchlist.findMany({
-      where: { isPublic: true },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            avatarUrl: true,
-            isVerified: true,
-          },
-        },
-        items: {
-          take: 5,
-          orderBy: { addedAt: 'desc' },
-        },
-        _count: {
-          select: { items: true },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
-      take: limit,
-    });
-
-    res.json({
-      success: true,
-      data: watchlists.map(w => ({
-        ...w,
-        itemsCount: w._count.items,
-      })),
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// POST /watchlist/default - Get or create default watchlist
 router.post('/default', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     let watchlist = await prisma.watchlist.findFirst({

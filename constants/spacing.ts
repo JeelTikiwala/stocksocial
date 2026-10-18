@@ -9,6 +9,8 @@ export const spacing = {
   xxl: 32,
   xxxl: 40,
   xxxxl: 48,
+  /** Bottom inset that keeps content clear of the floating tab bar */
+  tabBar: 104,
 } as const;
 
 export const borderRadius = {

@@ -9,3 +9,4 @@ export * from './EmptyState';
 export * from './Skeleton';
 export * from './Input';
 export * from './Icons';
+export * from './Glass';

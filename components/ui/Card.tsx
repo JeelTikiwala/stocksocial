@@ -1,77 +1,41 @@
 import React from 'react';
-import {
-  StyleSheet,
-  View,
-  ViewStyle,
-  StyleProp,
-  Pressable,
-  PressableProps,
-} from 'react-native';
-import { colors, borderRadius, spacing, cardShadow } from '@/constants';
+import { StyleSheet, View, ViewStyle, StyleProp, Pressable, PressableProps } from 'react-native';
+import { borderRadius, spacing } from '@/constants';
+import { GlassView } from './Glass';
 
 interface CardProps extends Omit<PressableProps, 'style'> {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** elevated = glass with shadow · outlined = glass, no shadow · flat = soft glass */
   variant?: 'elevated' | 'outlined' | 'flat';
   padding?: keyof typeof spacing | number;
   onPress?: () => void;
 }
 
-export const Card: React.FC<CardProps> = ({
-  children,
-  style,
-  variant = 'elevated',
-  padding = 'md',
-  onPress,
-  ...pressableProps
-}) => {
+export const Card: React.FC<CardProps> = ({ children, style, variant = 'elevated', padding = 'md', onPress, ...pressableProps }) => {
   const paddingValue = typeof padding === 'number' ? padding : spacing[padding];
-
-  const cardStyle: ViewStyle[] = [
-    styles.base,
-    { padding: paddingValue },
-    variant === 'elevated' && styles.elevated,
-    variant === 'outlined' && styles.outlined,
-    variant === 'flat' && styles.flat,
-  ].filter(Boolean) as ViewStyle[];
-
+  const surface = (
+    <GlassView
+      style={style}
+      contentStyle={{ padding: paddingValue }}
+      radius={borderRadius.lg}
+      shadow={variant === 'elevated'}
+      soft={variant === 'flat'}
+      strong={variant === 'outlined'}
+    >
+      {children}
+    </GlassView>
+  );
   if (onPress) {
     return (
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [
-          ...cardStyle,
-          pressed && styles.pressed,
-          style,
-        ]}
-        {...pressableProps}
-      >
-        {children}
+      <Pressable onPress={onPress} style={({ pressed }) => [pressed && styles.pressed]} {...pressableProps}>
+        {surface}
       </Pressable>
     );
   }
-
-  return <View style={[...cardStyle, style]}>{children}</View>;
+  return <View>{surface}</View>;
 };
 
 const styles = StyleSheet.create({
-  base: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-  },
-  elevated: {
-    ...cardShadow,
-  },
-  outlined: {
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  flat: {
-    backgroundColor: colors.offWhite,
-  },
-  pressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.99 }],
-  },
+  pressed: { opacity: 0.92, transform: [{ scale: 0.995 }] },
 });

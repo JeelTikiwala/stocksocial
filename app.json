@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "StockCircle",
-    "slug": "stockcircle",
+    "name": "Delta",
+    "slug": "delta",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "stockcircle",
+    "scheme": "delta",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",

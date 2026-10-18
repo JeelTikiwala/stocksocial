@@ -1,5 +1,5 @@
 {
-  "name": "stockcircle",
+  "name": "delta",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
@@ -7,18 +7,24 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "postinstall": "node scripts/fix-expo-jslogger.js"
+    "postinstall": "node scripts/fix-expo-jslogger.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test:backend": "npm --prefix backend test"
   },
   "dependencies": {
     "@expo/metro-runtime": "~55.0.12",
     "@react-navigation/bottom-tabs": "^7.15.5",
     "@react-navigation/native": "^7.1.33",
+    "@tanstack/react-query": "5.104.4",
     "axios": "^1.13.6",
     "babel-preset-expo": "^55.0.12",
     "date-fns": "^4.1.0",
     "expo": "~55.0.31",
+    "expo-blur": "~55.0.18",
     "expo-constants": "~55.0.17",
     "expo-haptics": "~55.0.18",
+    "expo-linear-gradient": "~55.0.18",
     "expo-linking": "~55.0.17",
     "expo-router": "~55.0.18",
     "expo-secure-store": "~55.0.18",
@@ -38,6 +44,9 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "babel-plugin-module-resolver": "^5.0.3",
+    "eslint": "^9.39.0",
+    "eslint-config-expo": "55.0.1",
+    "globals": "^16",
     "typescript": "~5.9.2"
   },
   "private": true,

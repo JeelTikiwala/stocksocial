@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: spacing.xxl,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.tabBar,
   },
   footerText: {
     ...typography.body,

@@ -5,10 +5,10 @@ import { router } from 'expo-router';
 import { colors, spacing, typography } from '@/constants';
 import {
   Button,
-  GlobeIcon,
+  LayersIcon,
   PieChartIcon,
-  TrendingIcon,
-  UsersIcon,
+  ShieldIcon,
+  ZapIcon,
 } from '@/components/ui';
 
 export default function WelcomeScreen() {
@@ -18,30 +18,30 @@ export default function WelcomeScreen() {
         {/* Logo & Branding */}
         <View style={styles.brandingSection}>
           <View style={styles.logoContainer}>
-            <GlobeIcon size={44} color={colors.teal} />
+            <LayersIcon size={44} color={colors.indigo} />
           </View>
-          <Text style={styles.appName}>StockCircle</Text>
+          <Text style={styles.appName}>Delta</Text>
           <Text style={styles.tagline}>
-            Invest smarter, together
+            NSE F&O analytics, built for option traders
           </Text>
         </View>
 
         {/* Features */}
         <View style={styles.featuresSection}>
           <FeatureItem
-            icon={<PieChartIcon size={26} color={colors.purple} />}
-            title="Track your portfolio"
-            description="Connect your broker and see your investments in one place"
+            icon={<ZapIcon size={26} color={colors.indigo} />}
+            title="Four screener zones"
+            description="Scalper, Intraday, Seller and Index tools on NSE F&O data"
           />
           <FeatureItem
-            icon={<UsersIcon size={26} color={colors.purple} />}
-            title="Learn from others"
-            description="Follow investors and see what they're buying"
+            icon={<ShieldIcon size={26} color={colors.indigo} />}
+            title="Seller-grade analytics"
+            description="IV rank, straddles, OI by strike, chains with greeks and FutEq OI"
           />
           <FeatureItem
-            icon={<TrendingIcon size={26} color={colors.purple} />}
-            title="Get insights"
-            description="AI-powered analysis of your portfolio"
+            icon={<PieChartIcon size={26} color={colors.indigo} />}
+            title="Sync your account"
+            description="Sign in to save watchlists and link a broker for portfolio sync"
           />
         </View>
       </View>
@@ -61,6 +61,13 @@ export default function WelcomeScreen() {
           fullWidth
           size="lg"
           style={styles.loginButton}
+        />
+        <Button
+          title="Continue without an account"
+          variant="ghost"
+          onPress={() => router.replace('/(tabs)')}
+          fullWidth
+          size="md"
         />
       </View>
     </SafeAreaView>
@@ -97,7 +104,7 @@ const styles = StyleSheet.create({
   brandingSection: {
     alignItems: 'center',
     paddingTop: spacing.xxxxl,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.tabBar,
   },
   logoContainer: {
     width: 80,

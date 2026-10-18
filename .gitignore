@@ -44,3 +44,6 @@ yarn-error.*
 
 # local development tooling
 /.claude/
+
+/docs
+REAL_DEPLOY_AND_TEST.md

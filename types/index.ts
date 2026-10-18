@@ -1,25 +1,15 @@
-// User types
+// Account types
 export interface User {
   id: string;
   username: string;
   email: string;
   displayName: string | null;
-  bio: string | null;
   avatarUrl: string | null;
   isVerified: boolean;
   isPro: boolean;
-  isPublic: boolean;
   createdAt: string;
-  followersCount?: number;
-  followingCount?: number;
-}
-export interface PublicProfile extends User {
-  followersCount: number;
-  followingCount: number;
-  isFollowing: boolean;
 }
 
-// Authentication
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
@@ -50,45 +40,29 @@ export interface ChartSegment {
   currentValue?: number;
 }
 
-// Post types
-export interface Post {
-  id: string;
-  userId: string;
-  user: User;
-  content: string;
-  title: string | null;
-  attachedTicker: string | null;
-  imageUrl: string | null;
-  likeCount: number;
-  commentCount: number;
-  createdAt: string;
-  isLiked?: boolean;
-  isSaved?: boolean;
-}
-
-export interface Comment {
-  id: string;
-  postId: string;
-  userId: string;
-  user: User;
-  content: string;
-  createdAt: string;
-}
-
-// Markets types
-export interface MarketEvent {
-  id: string;
-  title: string;
-  subtitle: string;
-  dateTime: string;
-  type: 'webinar' | 'ipo' | 'earnings' | 'dividend';
-}
-
-export interface EarningsDay {
-  date: string;
-  companies: {
-    ticker: string;
-    companyName: string;
-    logoUrl?: string;
-  }[];
-}
+// Market analytics types are shared with the backend engine.
+export type {
+  MarketDataset,
+  MarketStatus,
+  UniverseEntry,
+  FoContract,
+  UnderlyingEod,
+  IndexEod,
+  HistoryPoint,
+  IvPoint,
+  StraddlePoint,
+  FiiDiiPoint,
+  OptionChain,
+  ChainRow,
+  ChainSide,
+  Greeks,
+  StrategyLeg,
+  PayoffResult,
+  PayoffPoint,
+  MarginBreakdown,
+  DataMode,
+  Availability,
+  Zone,
+} from '@/backend/src/shared';
+export type { ScreenerSpec, ScreenerSummary, ScreenerResult, ScreenerRow, ColumnDef, ColumnType, ParamDef, ParamValue } from '@/backend/src/shared';
+export type { MarketPulse, HeatmapData, SectorPerformance, SectorConstituent, IvStats, UnderlyingDetail, ToolRequest, MarginResponse, PayoffResponse, WatchlistRow, NewsItem, LiveStatus, LiveQuote, LiveScreenerId } from '@/backend/src/shared';

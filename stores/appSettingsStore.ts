@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Platform } from 'react-native';
 
+export type DataSourceKind = 'mock' | 'api';
+
 interface AppSettingsState {
   brokerConnected: boolean;
   brokerName: string | null;
@@ -9,13 +11,13 @@ interface AppSettingsState {
   dividendGoalMonthly: number;
   pushNotifications: boolean;
   earningsNotifications: boolean;
-  socialNotifications: boolean;
+  dataSource: DataSourceKind;
   setBrokerConnection: (connected: boolean, brokerName?: string | null) => void;
   setPortfolioGoal: (goal: number) => void;
   setDividendGoalMonthly: (goal: number) => void;
   setPushNotifications: (enabled: boolean) => void;
   setEarningsNotifications: (enabled: boolean) => void;
-  setSocialNotifications: (enabled: boolean) => void;
+  setDataSource: (kind: DataSourceKind) => void;
 }
 
 const createStorage = () => {
@@ -53,7 +55,7 @@ export const useAppSettingsStore = create<AppSettingsState>()(
       dividendGoalMonthly: 2000,
       pushNotifications: true,
       earningsNotifications: true,
-      socialNotifications: true,
+      dataSource: process.env.EXPO_PUBLIC_DATA_SOURCE === 'api' ? 'api' : 'mock',
       setBrokerConnection: (connected: boolean, brokerName: string | null = null) =>
         set({
           brokerConnected: connected,
@@ -65,10 +67,10 @@ export const useAppSettingsStore = create<AppSettingsState>()(
         set({ dividendGoalMonthly: Math.max(0, Math.floor(goal || 0)) }),
       setPushNotifications: (enabled: boolean) => set({ pushNotifications: !!enabled }),
       setEarningsNotifications: (enabled: boolean) => set({ earningsNotifications: !!enabled }),
-      setSocialNotifications: (enabled: boolean) => set({ socialNotifications: !!enabled }),
+      setDataSource: (kind: DataSourceKind) => set({ dataSource: kind === 'api' ? 'api' : 'mock' }),
     }),
     {
-      name: 'app-settings-storage',
+      name: 'delta-app-settings', // new key: the StockCircle-era store carried social fields
       storage: createJSONStorage(() => storage),
     }
   )

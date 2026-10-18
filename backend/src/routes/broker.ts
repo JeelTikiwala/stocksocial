@@ -1,5 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
-import { prisma } from '../index';
+import { prisma } from '../db';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { badRequest } from '../middleware/errorHandler';
 import { encrypt, decrypt } from '../utils/encryption';

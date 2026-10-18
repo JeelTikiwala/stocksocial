@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, Platform } from 'react-native';
-import { colors } from '@/constants';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores';
+import { ScreenBackground } from '@/components/ui/Glass';
+import { liveManager } from '@/services/live/manager';
 
 // Only use SplashScreen on native platforms
 if (Platform.OS !== 'web') {
@@ -13,17 +15,28 @@ if (Platform.OS !== 'web') {
 }
 
 export default function RootLayout() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const tokens = useAuthStore((state) => state.tokens);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
-  const hasValidSession = Boolean(
-    isAuthenticated && tokens?.accessToken && tokens?.refreshToken
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+      })
   );
+
+  // Dev/test aid: open a route on launch (native only), e.g. EXPO_PUBLIC_INITIAL_ROUTE=/tools/heatmap
+  useEffect(() => {
+    const initial = process.env.EXPO_PUBLIC_INITIAL_ROUTE;
+    if (!hasHydrated || !initial || Platform.OS === 'web' || !__DEV__) return;
+    const t = setTimeout(() => router.push(initial as never), 300);
+    return () => clearTimeout(t);
+  }, [hasHydrated]);
+
+  useEffect(() => {
+    liveManager.start();
+  }, []);
 
   useEffect(() => {
     if (!hasHydrated) return;
-
-    // Hide splash screen after a short delay (native only)
     if (Platform.OS !== 'web') {
       const SplashScreen = require('expo-splash-screen');
       const timer = setTimeout(() => {
@@ -39,22 +52,25 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <StatusBar style="dark" />
-      <Stack
-        initialRouteName={hasValidSession ? '(tabs)' : '(auth)'}
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.offWhite },
-          animation: 'slide_from_right',
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
-        <Stack.Screen name="profile/[username]" />
-        <Stack.Screen name="post/[id]" />
-        <Stack.Screen name="stock/[ticker]" />
-        <Stack.Screen name="settings" />
-      </Stack>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style="dark" />
+        <ScreenBackground>
+        <Stack
+          initialRouteName="(tabs)"
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: 'transparent' },
+            animation: 'slide_from_right',
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+          <Stack.Screen name="screener/[id]" />
+          <Stack.Screen name="stock/[ticker]" />
+          <Stack.Screen name="settings" />
+        </Stack>
+        </ScreenBackground>
+      </QueryClientProvider>
     </GestureHandlerRootView>
   );
 }

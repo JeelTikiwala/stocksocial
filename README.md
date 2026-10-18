@@ -1,167 +1,95 @@
-# StockCircle
+# Delta — NSE F&O analytics
 
-A premium cross-platform stock social app for Indian investors built with React Native + Expo.
+Options and futures analytics for the Indian market (NSE), built with React Native + Expo and an
+Express/Prisma backend. Four screener zones — **Scalper**, **Intraday**, **Seller**, **Index** —
+plus a sector heatmap, options chain, IV and straddle charts, a SPAN-style margin estimator and a
+strategy builder.
 
-## Features
+**Current phase: B — live data.** Phase A (EOD product on free NSE data) is complete; Phase B adds a
+live engine with pluggable providers (simulated for development, Zerodha Kite for your own account),
+live Premium Spike / Volume Spike / Unusual Options, a Watchlist · Chart · Screeners · News · Profile
+IA, and a glass UI. See [`docs/DELTA_PORT_PLAN_INDIA.md`](docs/DELTA_PORT_PLAN_INDIA.md),
+[`docs/PHASE_A_PROGRESS.md`](docs/PHASE_A_PROGRESS.md) and [`docs/PHASE_B_PROGRESS.md`](docs/PHASE_B_PROGRESS.md).
 
-- **Portfolio Tracking**: Connect your broker (Zerodha) and visualize your portfolio with an interactive donut chart
-- **Social Feed**: Share investment insights, follow other investors, like and comment on posts
-- **Social Hub**: Discover investors, discussions, challenges, shared watchlists, and top portfolios
-- **Markets**: View upcoming events, earnings calendar, and featured stock lists
-- **Insights**: Get AI-powered analysis of your portfolio
+## How it works
 
-## Tech Stack
+- **Shared engine** (`backend/src/shared/`): domain types, Black–Scholes IV/greeks, payoff and
+  margin math, the screener engine (18 declarative specs), sector/pulse analytics and a
+  deterministic mock-market generator. It is imported by the backend *and* bundled into the app, so
+  mock mode on-device and the API produce identical results.
+- **Mobile/web app** (Expo Router) reads through one `DataSource` interface with two
+  implementations: `mock` (on-device, no network — the default) and `api` (Express backend).
+  Switch in **Settings → Market data**.
+- **Backend** serves `/v1/market`, `/v1/screeners`, `/v1/options`, `/v1/tools`, `/v1/news` from either
+  the in-memory mock (`DATA_STORE=memory`) or Postgres filled by the NSE bhavcopy ingestion, and
+  streams live quotes/screeners over `ws://…/ws` from a pluggable provider (`LIVE_PROVIDER=simulated|kite`).
+- **Live mode** in the app: mock data source → on-device simulated session; API source → backend WebSocket.
 
-### Mobile App
-- React Native + Expo (managed workflow)
-- TypeScript
-- Expo Router (file-based navigation)
-- Axios API services
-- Zustand for session, settings, and watchlist state
-- react-native-svg for charts
+## Run the app (mock data, no backend needed)
 
-### Backend
-- Node.js + Express
-- TypeScript
-- Prisma ORM
-- PostgreSQL
-- JWT authentication
-
-## Project Structure
-
-```
-stockcircle/
-├── app/                    # Expo Router screens
-│   ├── (auth)/            # Auth screens (login, register, etc.)
-│   ├── (tabs)/            # Main tab screens
-│   ├── profile/           # Profile screens
-│   └── post/              # Post detail screens
-├── components/
-│   ├── ui/                # Primitive UI components
-│   ├── charts/            # Chart components (DonutChart, Sparkline)
-│   ├── feed/              # Feed-related components
-│   ├── portfolio/         # Portfolio components
-│   └── markets/           # Markets components
-├── constants/             # Design system (colors, typography, spacing)
-├── stores/                # Zustand stores
-├── services/              # API client
-├── types/                 # TypeScript types
-├── utils/                 # Utility functions
-└── backend/               # Node.js backend
-    ├── src/
-    │   ├── routes/        # API routes
-    │   ├── middleware/    # Express middleware
-    │   ├── services/      # Business logic
-    │   └── utils/         # Utility functions
-    └── prisma/            # Database schema
-```
-
-## Getting Started
-
-### Prerequisites
-- Node.js >= 18
-- npm or yarn
-- PostgreSQL database
-
-### Mobile App Setup
-
-1. Install dependencies:
 ```bash
-npm install
+yarn install
+yarn web        # http://localhost:8081
+yarn ios        # iOS Simulator (Expo Go)
 ```
 
-2. Create `.env` file:
+## Run the backend
+
 ```bash
+cd backend && npm install
 cp .env.example .env
+npm run dev                 # DATA_STORE=memory → mock market on http://localhost:3000
+npm test                    # 39 tests incl. parsers against a real NSE bhavcopy sample
 ```
 
-3. Start the development server:
-```bash
-npm start
-```
+With Postgres (`DATABASE_URL` set, `DATA_STORE=prisma`):
 
-4. Run on iOS/Android:
-```bash
-npm run ios
-# or
-npm run android
-```
-
-### Backend Setup
-
-1. Navigate to backend directory:
-```bash
-cd backend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create `.env` file:
-```bash
-cp .env.example .env
-# Edit .env with your database credentials and secrets
-```
-
-4. Generate Prisma client:
-```bash
-npm run db:generate
-```
-
-5. Push database schema:
 ```bash
 npm run db:push
+npm run ingest -- 2026-10-16            # downloads NSE F&O bhavcopy + indices file, computes IV/straddles
+npm run ingest -- 2026-10-16 --dry-run  # fetch + derive only, prints a summary
 ```
 
-6. Start the development server:
+Then in the app choose **API server** in Settings (set `EXPO_PUBLIC_API_URL` for devices).
+
+## Live data with your Kite account
+
 ```bash
-npm run dev
+# backend/.env
+LIVE_PROVIDER=kite
+KITE_API_KEY=...      KITE_API_SECRET=...
+KITE_REDIRECT_URL=http://localhost:3000/v1/live/kite/callback   # must match your Kite Connect app
 ```
+Start the backend, set the app's data source to **API server** (Profile), then **Connect Kite**.
+Tokens expire ~06:00 IST, so log in once per trading day. Kite's terms allow its data for your own use
+only; the provider interface is where Upstox/Fyers (per-user tokens) will be added for other users.
 
-## API Endpoints
+## Data & licensing posture
 
-### Auth
-- `POST /v1/auth/register` - Register new user
-- `POST /v1/auth/login` - Login user
-- `POST /v1/auth/refresh` - Refresh access token
-- `POST /v1/auth/logout` - Logout user
+Phase A uses only **free, public NSE end-of-day reports** (UDiFF F&O bhavcopy, indices close file).
+No broker API or vendor feed data is redistributed. Live data arrives in later phases via each
+user's own broker login (Phase B) and a licensed feed (Phase C). The app displays and filters
+published data; it does not issue recommendations.
 
-### Portfolio
-- `GET /v1/portfolio/summary` - Get portfolio summary
-- `GET /v1/portfolio/holdings` - Get all holdings
-- `GET /v1/portfolio/chart-data` - Get chart data
-- `GET /v1/portfolio/trades` - Get trade history
+## Project structure
 
-### Broker
-- `GET /v1/broker/status` - Get broker connection status
-- `GET /v1/broker/zerodha/auth-url` - Get Zerodha OAuth URL
-- `POST /v1/broker/sync` - Sync portfolio with broker
-
-### Feed
-- `GET /v1/feed` - Get feed posts
-- `POST /v1/posts` - Create new post
-- `GET /v1/posts/:id` - Get post details
-- `POST /v1/posts/:id/like` - Like/unlike post
-- `POST /v1/posts/:id/comments` - Add comment
-
-### Users
-- `GET /v1/users/:username` - Get user profile
-- `GET /v1/users/:username/holdings` - Get user's public holdings
-- `GET /v1/users/:username/posts` - Get user's posts
-- `POST /v1/users/:username/follow` - Follow user
-- `DELETE /v1/users/:username/follow` - Unfollow user
-
-### Markets
-- `GET /v1/markets/events` - Get upcoming events
-- `GET /v1/markets/earnings-calendar` - Get earnings calendar
-- `GET /v1/markets/featured-lists` - Get featured stock lists
-- `GET /v1/markets/fear-greed` - Get fear & greed index
-
-
-See `constants/colors.ts` for the full color palette.
-
-## License
-
-MIT
+```
+app/                      Expo Router screens
+  (tabs)/                 Watchlist · Chart · Screeners · News · Profile (+ hidden Portfolio)
+  screener/[id].tsx       Generic results table for table-style screeners
+  tools/                  Market Pulse, Heatmap, Sector Scope, IV Chart, Straddle, Strike Open,
+                          Options Chain, Strategy Builder, Margin Calculator
+  stock/[ticker].tsx      Underlying detail
+components/screener/      Screener UI kit (pickers, tables, tiles, banners)
+components/charts/        LineChart · MirrorBars (OI by strike) · Treemap · PayoffChart
+components/ui/Glass.tsx   GlassView / ScreenBackground (glassmorphism); navigation/FloatingTabBar
+services/data/            DataSource interface, mock + api implementations
+services/live/            Live clients (on-device simulator, backend WebSocket) + manager
+hooks/useMarketData.ts    react-query hooks · hooks/useLive.ts live quotes/screeners
+backend/src/shared/       Shared engine (see above)
+backend/src/ingest/       NSE bhavcopy / indices fetch + parse + derive
+backend/src/live/         LiveEngine, providers (simulated, Kite), Kite session, WebSocket server
+backend/src/routes/       Express routes
+backend/test/fixtures/    Real NSE samples (2026-10-16) used by tests
+docs/                     Plan, progress log, archived Americas assessment
+```

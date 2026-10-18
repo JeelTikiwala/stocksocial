@@ -3,9 +3,7 @@ import { router } from 'expo-router';
 
 export default function SettingsRedirectScreen() {
   useEffect(() => {
-    router.replace('/(tabs)/settings');
+    router.replace('/(tabs)/profile');
   }, []);
-
   return null;
 }
-

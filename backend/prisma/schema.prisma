@@ -1,7 +1,9 @@
-// Prisma schema for StockCircle
+// Prisma schema for Delta (India F&O analytics)
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Dev machines here run both x64 (Rosetta) and arm64 Node; ship engines for both.
+  binaryTargets = ["native", "darwin", "darwin-arm64"]
 }
 
 datasource db {
@@ -9,32 +11,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------------- Accounts ----------------
+
 model User {
   id           String   @id @default(cuid())
   username     String   @unique
   email        String   @unique
   passwordHash String
   displayName  String?
-  bio          String?
   avatarUrl    String?
   isVerified   Boolean  @default(false)
   isPro        Boolean  @default(false)
-  isPublic     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   brokerConnections BrokerConnection[]
   holdings          Holding[]
   trades            Trade[]
-  posts             Post[]
-  comments          Comment[]
-  likes             Like[]
-  followers         Follow[]           @relation("following")
-  following         Follow[]           @relation("follower")
-  savedPosts        SavedPost[]
   watchlists        Watchlist[]
-  stockInteractions StockInteraction[]
-  activities        UserActivity[]
   settings          UserSettings?
 
   @@index([username])
@@ -58,27 +52,32 @@ model BrokerConnection {
   @@index([userId])
 }
 
+/// ZERODHA = order execution only (Kite terms forbid displaying its market data in third-party apps).
+/// UPSTOX / FYERS / ANGELONE / DHAN = per-user data connections for Phase B (BYOB).
 enum Broker {
   ZERODHA
   GROWW
   UPSTOX
+  FYERS
+  ANGELONE
+  DHAN
 }
 
 model Holding {
-  id            String   @id @default(cuid())
-  userId        String
-  ticker        String
-  companyName   String
-  exchange      String
-  quantity      Float
-  avgBuyPrice   Float
-  currentPrice  Float
-  todayChangePct Float   @default(0)
-  allocationPct Float    @default(0)
-  colorHex      String
-  lastSyncedAt  DateTime
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(cuid())
+  userId         String
+  ticker         String
+  companyName    String
+  exchange       String
+  quantity       Float
+  avgBuyPrice    Float
+  currentPrice   Float
+  todayChangePct Float    @default(0)
+  allocationPct  Float    @default(0)
+  colorHex       String
+  lastSyncedAt   DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -108,113 +107,6 @@ enum TradeType {
   SELL
 }
 
-model Post {
-  id             String    @id @default(cuid())
-  userId         String
-  content        String
-  title          String?
-  attachedTicker String?
-  imageUrl       String?
-  likeCount      Int       @default(0)
-  commentCount   Int       @default(0)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comments   Comment[]
-  likes      Like[]
-  savedBy    SavedPost[]
-
-  @@index([userId])
-  @@index([createdAt])
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([postId])
-  @@index([userId])
-}
-
-model Like {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  createdAt DateTime @default(now())
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([postId, userId])
-  @@index([postId])
-  @@index([userId])
-}
-
-model SavedPost {
-  id        String   @id @default(cuid())
-  postId    String
-  userId    String
-  createdAt DateTime @default(now())
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([postId, userId])
-  @@index([userId])
-}
-
-model Follow {
-  followerId  String
-  followingId String
-  createdAt   DateTime @default(now())
-
-  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
-  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
-
-  @@id([followerId, followingId])
-  @@index([followerId])
-  @@index([followingId])
-}
-
-model MarketEvent {
-  id        String    @id @default(cuid())
-  title     String
-  subtitle  String?
-  dateTime  DateTime
-  type      EventType
-  imageUrl  String?
-  createdAt DateTime  @default(now())
-
-  @@index([dateTime])
-}
-
-enum EventType {
-  WEBINAR
-  IPO
-  EARNINGS
-  DIVIDEND
-}
-
-model EarningsReport {
-  id          String   @id @default(cuid())
-  ticker      String
-  companyName String
-  reportDate  DateTime
-  exchange    String
-  createdAt   DateTime @default(now())
-
-  @@index([reportDate])
-  @@index([ticker])
-}
-
 model RefreshToken {
   id        String   @id @default(cuid())
   token     String   @unique
@@ -226,7 +118,6 @@ model RefreshToken {
   @@index([expiresAt])
 }
 
-// Watchlist for tracking stocks users are watching
 model Watchlist {
   id        String          @id @default(cuid())
   userId    String
@@ -252,73 +143,117 @@ model WatchlistItem {
 
   @@unique([watchlistId, ticker])
   @@index([ticker])
-  @@index([addedAt])
 }
 
-// Track user interactions with stocks for analytics and activity feed
-model StockInteraction {
-  id        String   @id @default(cuid())
-  userId    String
-  ticker    String
-  action    String   // 'view', 'search', 'watchlist_add', 'share', etc.
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([ticker])
-  @@index([createdAt])
-}
-
-// Social activity feed for tracking user actions
-model UserActivity {
-  id          String       @id @default(cuid())
-  userId      String
-  type        ActivityType
-  ticker      String?
-  targetUserId String?     // For follow activities
-  postId      String?      // For post-related activities
-  metadata    String?      // JSON string for additional data
-  isPublic    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([type])
-  @@index([createdAt])
-  @@index([ticker])
-}
-
-enum ActivityType {
-  WATCHLIST_ADD
-  WATCHLIST_REMOVE
-  TRADE_BUY
-  TRADE_SELL
-  POST_CREATE
-  POST_LIKE
-  FOLLOW_USER
-  GOAL_REACHED
-  PORTFOLIO_MILESTONE
-}
-
-// User settings stored server-side
 model UserSettings {
-  id                     String   @id @default(cuid())
-  userId                 String   @unique
-  portfolioGoal          Float?
-  dividendGoalMonthly    Float?
-  pushNotifications      Boolean  @default(true)
-  earningsNotifications  Boolean  @default(true)
-  socialNotifications    Boolean  @default(true)
-  priceAlertNotifications Boolean @default(true)
-  weeklyDigestEnabled    Boolean  @default(true)
-  privacyShowHoldings    Boolean  @default(true)
-  privacyShowTrades      Boolean  @default(false)
-  privacyShowActivity    Boolean  @default(true)
-  theme                  String   @default("light")
-  currency               String   @default("INR")
-  updatedAt              DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  portfolioGoal           Float?
+  dividendGoalMonthly     Float?
+  pushNotifications       Boolean  @default(true)
+  earningsNotifications   Boolean  @default(true)
+  priceAlertNotifications Boolean  @default(true)
+  weeklyDigestEnabled     Boolean  @default(true)
+  theme                   String   @default("light")
+  currency                String   @default("INR")
+  updatedAt               DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------------- Market data (EOD, from free NSE files) ----------------
+
+/// One row per F&O contract per trading day — normalised NSE UDiFF bhavcopy.
+model FoContractEod {
+  id              String   @id @default(cuid())
+  tradeDate       DateTime
+  symbol          String
+  instrumentType  String   // IDO | STO | IDF | STF
+  expiry          DateTime
+  strike          Float?
+  optionType      String?  // CE | PE
+  open            Float
+  high            Float
+  low             Float
+  close           Float
+  last            Float
+  prevClose       Float
+  underlyingPrice Float
+  settle          Float
+  oi              Float    // units (shares), as NSE reports — exceeds INT4 for low-priced names
+  chgOi           Float
+  volume          Float    // units
+  turnover        Float
+  trades          Int
+  lotSize         Int
+
+  @@index([tradeDate])
+  @@index([symbol, tradeDate])
+  @@index([tradeDate, symbol, expiry])
+}
+
+model UnderlyingEod {
+  tradeDate      DateTime
+  symbol         String
+  close          Float
+  prevClose      Float
+  futVolume      Float
+  futVolumeAvg20 Float?
+  isIndex        Boolean
+  sector         String
+
+  @@id([tradeDate, symbol])
+  @@index([symbol])
+}
+
+model IndexEod {
+  tradeDate DateTime
+  name      String
+  close     Float
+  prevClose Float
+
+  @@id([tradeDate, name])
+}
+
+/// Near-expiry ATM IV and straddle per underlying per day (computed at ingestion).
+model IvDaily {
+  tradeDate     DateTime
+  symbol        String
+  expiry        DateTime
+  atmIv         Float?
+  atmStrike     Float
+  straddlePrice Float
+  spot          Float
+  daysToExpiry  Int
+
+  @@id([tradeDate, symbol])
+  @@index([symbol])
+}
+
+model FiiDiiDaily {
+  tradeDate DateTime @id
+  fiiNet    Float
+  diiNet    Float
+}
+
+model UniverseSymbol {
+  symbol    String   @id
+  name      String
+  sector    String
+  isIndex   Boolean
+  lotSize   Int
+  updatedAt DateTime @updatedAt
+}
+
+model IngestionRun {
+  id         String    @id @default(cuid())
+  tradeDate  DateTime
+  source     String
+  status     String    // running | success | failed
+  rows       Int       @default(0)
+  error      String?
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([tradeDate])
 }
